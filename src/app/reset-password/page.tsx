@@ -3,63 +3,68 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { createBrowserClient } from "@supabase/ssr";
 import { type EmailOtpType } from "@supabase/supabase-js";
-import { createClient } from "@/lib/supabase/client";
 import { parsePassword } from "@/lib/validation";
 
+const EXPIRED = "링크가 만료되었거나 유효하지 않습니다. 다시 요청해 주세요.";
+
 export default function ResetPasswordPage() {
-  const [supabase] = useState(() => createClient());
+  // detectSessionInUrl 을 끈다 → URL 파라미터를 우리가 직접 처리(자동으로 지워지지 않게)
+  const [supabase] = useState(() =>
+    createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { auth: { detectSessionInUrl: false } },
+    ),
+  );
   const router = useRouter();
 
   const [checking, setChecking] = useState(true);
-  const [ready, setReady] = useState(false); // 유효한 재설정 세션 확보 여부
-  const [pending, setPending] = useState(false);
+  const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [done, setDone] = useState(false);
+  const [pending, setPending] = useState(false);
+  const [detected, setDetected] = useState<string>(""); // 진단용
 
-  // 링크로 진입 시 재설정 세션을 확보한다. 여러 방식 모두 대응:
-  //  1) 해시 토큰 #access_token&refresh_token (Supabase 기본 메일) -> setSession
-  //  2) token_hash+type=recovery (커스텀 템플릿) -> verifyOtp
-  //  3) code (PKCE) -> exchangeCodeForSession
-  //  4) 이미 세션 있음 (detectSessionInUrl 이 먼저 처리한 경우) -> 그대로 진행
   useEffect(() => {
-    const url = new URL(window.location.href);
+    const search = new URLSearchParams(window.location.search);
     const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+    setDetected(
+      `query: [${[...search.keys()].join(", ") || "없음"}] / hash: [${
+        [...hash.keys()].join(", ") || "없음"
+      }]`,
+    );
 
     const errDesc =
-      hash.get("error_description") ??
-      url.searchParams.get("error_description");
+      hash.get("error_description") ?? search.get("error_description");
+    const tokenHash = search.get("token_hash");
+    const type = search.get("type") as EmailOtpType | null;
     const accessToken = hash.get("access_token");
     const refreshToken = hash.get("refresh_token");
-    const tokenHash = url.searchParams.get("token_hash");
-    const type = url.searchParams.get("type") as EmailOtpType | null;
-    const code = url.searchParams.get("code");
-
-    const EXPIRED = "링크가 만료되었거나 유효하지 않습니다. 다시 요청해 주세요.";
+    const code = search.get("code");
 
     async function establish() {
       if (errDesc) {
         setError(errDesc);
-      } else if (accessToken && refreshToken) {
-        const { error } = await supabase.auth.setSession({
-          access_token: accessToken,
-          refresh_token: refreshToken,
-        });
-        setError(error ? EXPIRED : null);
-        if (!error) setReady(true);
       } else if (tokenHash && type) {
         const { error } = await supabase.auth.verifyOtp({
           type,
           token_hash: tokenHash,
         });
-        setError(error ? EXPIRED : null);
-        if (!error) setReady(true);
+        if (error) setError(EXPIRED);
+        else setReady(true);
+      } else if (accessToken && refreshToken) {
+        const { error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
+        if (error) setError(EXPIRED);
+        else setReady(true);
       } else if (code) {
         const { error } = await supabase.auth.exchangeCodeForSession(code);
-        setError(error ? EXPIRED : null);
-        if (!error) setReady(true);
+        if (error) setError(EXPIRED);
+        else setReady(true);
       } else {
-        // detectSessionInUrl 이 이미 해시를 처리했을 수 있음
         const { data } = await supabase.auth.getSession();
         if (data.session) setReady(true);
         else setError("유효한 재설정 링크로 접근해 주세요.");
@@ -96,7 +101,6 @@ export default function ResetPasswordPage() {
       setError(`변경 실패: ${error.message}`);
       return;
     }
-    setDone(true);
     router.push("/portfolio");
   }
 
@@ -106,7 +110,7 @@ export default function ResetPasswordPage() {
 
       {checking ? (
         <p className="text-sm text-gray-500">확인 중…</p>
-      ) : ready && !done ? (
+      ) : ready ? (
         <form onSubmit={onSubmit} className="space-y-4">
           <label className="block space-y-1 text-sm">
             <span className="text-gray-500">새 비밀번호 (6자 이상)</span>
@@ -143,6 +147,10 @@ export default function ResetPasswordPage() {
         <div className="space-y-3">
           <p className="text-sm text-red-600">
             {error ?? "유효한 재설정 링크로 접근해 주세요."}
+          </p>
+          {/* 진단용: 링크로 들어온 파라미터 확인 (문제 해결 후 제거) */}
+          <p className="rounded bg-gray-100 p-2 font-mono text-xs text-gray-500 dark:bg-gray-900">
+            진단: {detected}
           </p>
           <Link
             href="/forgot-password"
