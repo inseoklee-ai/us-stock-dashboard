@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { type EmailOtpType } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import { parsePassword } from "@/lib/validation";
 
@@ -16,35 +17,45 @@ export default function ResetPasswordPage() {
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
 
-  // 링크로 진입 시 code 를 세션으로 교환
+  // 링크로 진입 시 재설정 세션을 확보한다.
+  // 방식 1) token_hash + type=recovery (메일 템플릿 권장) -> verifyOtp
+  // 방식 2) code (PKCE) -> exchangeCodeForSession (예비)
   useEffect(() => {
     const url = new URL(window.location.href);
+    const tokenHash = url.searchParams.get("token_hash");
+    const type = url.searchParams.get("type") as EmailOtpType | null;
     const code = url.searchParams.get("code");
     const errDesc = url.searchParams.get("error_description");
 
-    if (errDesc) {
-      setError(errDesc);
-      setChecking(false);
-      return;
-    }
-
-    if (code) {
-      supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
+    async function establish() {
+      if (errDesc) {
+        setError(errDesc);
+      } else if (tokenHash && type) {
+        const { error } = await supabase.auth.verifyOtp({
+          type,
+          token_hash: tokenHash,
+        });
         if (error) {
           setError("링크가 만료되었거나 유효하지 않습니다. 다시 요청해 주세요.");
         } else {
           setReady(true);
         }
-        setChecking(false);
-      });
-    } else {
-      // 이미 세션이 있으면(구형 링크 등) 진행
-      supabase.auth.getSession().then(({ data }) => {
+      } else if (code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        if (error) {
+          setError("링크가 만료되었거나 유효하지 않습니다. 다시 요청해 주세요.");
+        } else {
+          setReady(true);
+        }
+      } else {
+        const { data } = await supabase.auth.getSession();
         if (data.session) setReady(true);
         else setError("유효한 재설정 링크로 접근해 주세요.");
-        setChecking(false);
-      });
+      }
+      setChecking(false);
     }
+
+    establish();
   }, [supabase]);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
