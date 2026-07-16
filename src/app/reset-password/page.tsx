@@ -17,37 +17,49 @@ export default function ResetPasswordPage() {
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
 
-  // 링크로 진입 시 재설정 세션을 확보한다.
-  // 방식 1) token_hash + type=recovery (메일 템플릿 권장) -> verifyOtp
-  // 방식 2) code (PKCE) -> exchangeCodeForSession (예비)
+  // 링크로 진입 시 재설정 세션을 확보한다. 여러 방식 모두 대응:
+  //  1) 해시 토큰 #access_token&refresh_token (Supabase 기본 메일) -> setSession
+  //  2) token_hash+type=recovery (커스텀 템플릿) -> verifyOtp
+  //  3) code (PKCE) -> exchangeCodeForSession
+  //  4) 이미 세션 있음 (detectSessionInUrl 이 먼저 처리한 경우) -> 그대로 진행
   useEffect(() => {
     const url = new URL(window.location.href);
+    const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+
+    const errDesc =
+      hash.get("error_description") ??
+      url.searchParams.get("error_description");
+    const accessToken = hash.get("access_token");
+    const refreshToken = hash.get("refresh_token");
     const tokenHash = url.searchParams.get("token_hash");
     const type = url.searchParams.get("type") as EmailOtpType | null;
     const code = url.searchParams.get("code");
-    const errDesc = url.searchParams.get("error_description");
+
+    const EXPIRED = "링크가 만료되었거나 유효하지 않습니다. 다시 요청해 주세요.";
 
     async function establish() {
       if (errDesc) {
         setError(errDesc);
+      } else if (accessToken && refreshToken) {
+        const { error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
+        setError(error ? EXPIRED : null);
+        if (!error) setReady(true);
       } else if (tokenHash && type) {
         const { error } = await supabase.auth.verifyOtp({
           type,
           token_hash: tokenHash,
         });
-        if (error) {
-          setError("링크가 만료되었거나 유효하지 않습니다. 다시 요청해 주세요.");
-        } else {
-          setReady(true);
-        }
+        setError(error ? EXPIRED : null);
+        if (!error) setReady(true);
       } else if (code) {
         const { error } = await supabase.auth.exchangeCodeForSession(code);
-        if (error) {
-          setError("링크가 만료되었거나 유효하지 않습니다. 다시 요청해 주세요.");
-        } else {
-          setReady(true);
-        }
+        setError(error ? EXPIRED : null);
+        if (!error) setReady(true);
       } else {
+        // detectSessionInUrl 이 이미 해시를 처리했을 수 있음
         const { data } = await supabase.auth.getSession();
         if (data.session) setReady(true);
         else setError("유효한 재설정 링크로 접근해 주세요.");
