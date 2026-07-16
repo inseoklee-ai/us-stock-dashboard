@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { deleteHolding, updateHolding } from "@/app/portfolio/actions";
+import { SubmitButton } from "@/components/SubmitButton";
 import type { HoldingRow } from "@/lib/portfolio";
 import type { FormState } from "@/lib/validation";
 import {
@@ -159,12 +160,12 @@ export function EditableHoldingRow({ row }: { row: HoldingRow }) {
         </button>
         <form action={deleteHolding} className="ml-2 inline">
           <input type="hidden" name="id" value={h.id} />
-          <button
-            type="submit"
-            className="text-gray-400 hover:text-red-600 hover:underline"
+          <SubmitButton
+            pendingLabel="삭제 중…"
+            className="text-gray-400 hover:text-red-600 hover:underline disabled:opacity-50"
           >
             삭제
-          </button>
+          </SubmitButton>
         </form>
       </td>
     </tr>

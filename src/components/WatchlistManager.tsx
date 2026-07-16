@@ -1,5 +1,6 @@
 import { removeWatch } from "@/app/feed/actions";
 import { AddWatchForm } from "@/components/AddWatchForm";
+import { SubmitButton } from "@/components/SubmitButton";
 
 type Props = {
   held: string[]; // 보유 종목 (자동 포함, 삭제 불가)
@@ -32,13 +33,12 @@ export function WatchlistManager({ held, watch }: Props) {
             {t}
             <form action={removeWatch} className="inline">
               <input type="hidden" name="ticker" value={t} />
-              <button
-                type="submit"
-                className="text-gray-400 hover:text-red-600"
-                aria-label={`${t} 관심 종목 삭제`}
+              <SubmitButton
+                pendingLabel="…"
+                className="text-gray-400 hover:text-red-600 disabled:opacity-50"
               >
                 ✕
-              </button>
+              </SubmitButton>
             </form>
           </span>
         ))}
