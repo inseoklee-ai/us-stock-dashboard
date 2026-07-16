@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { SignOutButton } from "@/components/SignOutButton";
 import { WeightDonut } from "@/components/WeightDonut";
+import { AssetHistoryChart } from "@/components/AssetHistoryChart";
 import { getQuotes, quotesEnabled } from "@/lib/quotes";
 import { getUsdKrwRate } from "@/lib/fx";
 import { computePortfolio } from "@/lib/portfolio";
@@ -89,6 +90,29 @@ export default async function DashboardPage() {
       ? totals.totalGain * fx.rate
       : null;
 
+  // 방문 기반 자산 스냅샷: 시세를 모두 구했고 환율이 있을 때 오늘 값 기록 (하루 1건 upsert)
+  if (showValue && fx) {
+    const today = new Date().toISOString().slice(0, 10);
+    await supabase.from("portfolio_snapshots").upsert(
+      {
+        user_id: user.id,
+        snapshot_date: today,
+        total_usd: Math.round(totals.totalValue * 100) / 100,
+        total_krw: Math.round(totals.totalValue * fx.rate * 100) / 100,
+        fx_rate: fx.rate,
+      },
+      { onConflict: "user_id,snapshot_date" },
+    );
+  }
+
+  const { data: snaps } = await supabase
+    .from("portfolio_snapshots")
+    .select("snapshot_date,total_krw")
+    .order("snapshot_date", { ascending: true });
+  const historyPoints = (
+    (snaps ?? []) as { snapshot_date: string; total_krw: number }[]
+  ).map((s) => ({ date: s.snapshot_date, krw: Number(s.total_krw) }));
+
   return (
     <Shell>
       <div className="flex items-center justify-between text-sm">
@@ -174,6 +198,8 @@ export default async function DashboardPage() {
           </div>
 
           <WeightDonut rows={totals.rows} />
+
+          <AssetHistoryChart points={historyPoints} />
 
           <p className="text-xs text-gray-400">
             {fx

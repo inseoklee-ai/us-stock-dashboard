@@ -83,10 +83,18 @@ create index if not exists snapshots_user_date_idx
 
 alter table public.portfolio_snapshots enable row level security;
 
--- users read own snapshots only (writes handled by service_role batch)
+-- users read own snapshots
 drop policy if exists "snapshots_select_own" on public.portfolio_snapshots;
 create policy "snapshots_select_own" on public.portfolio_snapshots
   for select to authenticated using (auth.uid() = user_id);
+
+-- users record/update their own daily snapshot (visit-based capture)
+drop policy if exists "snapshots_insert_own" on public.portfolio_snapshots;
+create policy "snapshots_insert_own" on public.portfolio_snapshots
+  for insert to authenticated with check (auth.uid() = user_id);
+drop policy if exists "snapshots_update_own" on public.portfolio_snapshots;
+create policy "snapshots_update_own" on public.portfolio_snapshots
+  for update to authenticated using (auth.uid() = user_id);
 
 -- ---------------------------------------------------------------------
 -- 4) quotes_cache: shared quote cache (server updates)

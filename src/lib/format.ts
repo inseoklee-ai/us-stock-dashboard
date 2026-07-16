@@ -37,3 +37,14 @@ export function formatSignedKRW(value: number): string {
   const sign = value > 0 ? "+" : "";
   return sign + formatKRW(value);
 }
+
+/** 축약 원화 (예: ₩471만) — 그래프 축 라벨용 */
+export function formatKRWCompact(value: number): string {
+  return (
+    "₩" +
+    new Intl.NumberFormat("ko-KR", {
+      notation: "compact",
+      maximumFractionDigits: 1,
+    }).format(value)
+  );
+}
