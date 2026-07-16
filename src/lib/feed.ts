@@ -1,0 +1,253 @@
+import { cache } from "react";
+
+/**
+ * 관심/보유 종목의 소식 피드.
+ * - 뉴스: Finnhub company-news (STOCK_API_KEY)
+ * - 공시: SEC EDGAR (공식, 키 불필요, User-Agent 필요)
+ * - 실적: Finnhub earnings calendar (예정 실적)
+ * 서버 전용 모듈.
+ */
+
+export type FeedType = "news" | "filing" | "earnings";
+
+export type FeedItem = {
+  id: string;
+  ticker: string;
+  type: FeedType;
+  title: string;
+  url: string | null;
+  source: string;
+  timestamp: number; // 정렬용 (ms)
+  dateLabel: string; // 표시용 (YYYY-MM-DD)
+};
+
+function ymd(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+
+const secHeaders = () => ({
+  "User-Agent":
+    process.env.SEC_USER_AGENT ?? "us-stock-dashboard example@example.com",
+});
+
+// ---------------------------------------------------------------------
+// 뉴스 (Finnhub company-news)
+// ---------------------------------------------------------------------
+const getNews = cache(async (ticker: string): Promise<FeedItem[]> => {
+  const key = process.env.STOCK_API_KEY;
+  if (!key) return [];
+
+  const now = new Date();
+  const from = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+  try {
+    const res = await fetch(
+      `https://finnhub.io/api/v1/company-news?symbol=${encodeURIComponent(
+        ticker,
+      )}&from=${ymd(from)}&to=${ymd(now)}&token=${key}`,
+      { next: { revalidate: 1800 } }, // 30분
+    );
+    if (!res.ok) return [];
+
+    const data: Array<{
+      headline?: string;
+      source?: string;
+      datetime?: number;
+      url?: string;
+      id?: number;
+    }> = await res.json();
+
+    return data
+      .filter((a) => a.headline && a.datetime)
+      .sort((a, b) => (b.datetime ?? 0) - (a.datetime ?? 0))
+      .slice(0, 5)
+      .map((a) => ({
+        id: `n-${ticker}-${a.id ?? a.datetime}`,
+        ticker,
+        type: "news" as const,
+        title: a.headline!,
+        url: a.url ?? null,
+        source: a.source ?? "News",
+        timestamp: (a.datetime ?? 0) * 1000,
+        dateLabel: ymd(new Date((a.datetime ?? 0) * 1000)),
+      }));
+  } catch {
+    return [];
+  }
+});
+
+// ---------------------------------------------------------------------
+// 공시 (SEC EDGAR)
+// ---------------------------------------------------------------------
+
+// ticker -> CIK(10자리) 맵. 하루 1회 갱신.
+const getCikMap = cache(async (): Promise<Record<string, string>> => {
+  try {
+    const res = await fetch("https://www.sec.gov/files/company_tickers.json", {
+      headers: secHeaders(),
+      next: { revalidate: 86400 },
+    });
+    if (!res.ok) return {};
+    const data: Record<string, { cik_str: number; ticker: string }> =
+      await res.json();
+    const map: Record<string, string> = {};
+    for (const k in data) {
+      const e = data[k];
+      map[e.ticker.toUpperCase()] = String(e.cik_str).padStart(10, "0");
+    }
+    return map;
+  } catch {
+    return {};
+  }
+});
+
+// 공식 발표에 해당하는 주요 서식만 (내부자거래 Form 4 등 노이즈 제외)
+const FILING_LABELS: Record<string, string> = {
+  "8-K": "주요사항보고 (8-K)",
+  "8-K/A": "주요사항보고 정정 (8-K/A)",
+  "10-Q": "분기보고서 (10-Q)",
+  "10-K": "연간보고서 (10-K)",
+  "6-K": "외국기업 보고 (6-K)",
+  "20-F": "연간보고서 (20-F)",
+  "40-F": "연간보고서 (40-F)",
+  "DEF 14A": "주주총회 안내 (DEF 14A)",
+};
+
+const getFilings = cache(async (ticker: string): Promise<FeedItem[]> => {
+  const cikMap = await getCikMap();
+  const cik = cikMap[ticker.toUpperCase()];
+  if (!cik) return [];
+
+  try {
+    const res = await fetch(
+      `https://data.sec.gov/submissions/CIK${cik}.json`,
+      { headers: secHeaders(), next: { revalidate: 3600 } },
+    );
+    if (!res.ok) return [];
+
+    const data: {
+      filings?: {
+        recent?: {
+          form: string[];
+          filingDate: string[];
+          accessionNumber: string[];
+          primaryDocument: string[];
+        };
+      };
+    } = await res.json();
+
+    const r = data.filings?.recent;
+    if (!r) return [];
+
+    const cikInt = String(parseInt(cik, 10));
+    const out: FeedItem[] = [];
+    for (let i = 0; i < r.form.length && out.length < 5; i++) {
+      const form = r.form[i];
+      const label = FILING_LABELS[form];
+      if (!label) continue; // 주요 서식만
+
+      const accn = r.accessionNumber[i];
+      const accnNo = accn.replace(/-/g, "");
+      const doc = r.primaryDocument[i];
+      const url = doc
+        ? `https://www.sec.gov/Archives/edgar/data/${cikInt}/${accnNo}/${doc}`
+        : `https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=${cik}&type=&dateb=&owner=include&count=40`;
+      const date = r.filingDate[i];
+
+      out.push({
+        id: `f-${accn}`,
+        ticker,
+        type: "filing",
+        title: label,
+        url,
+        source: "SEC EDGAR",
+        timestamp: Date.parse(date),
+        dateLabel: date,
+      });
+    }
+    return out;
+  } catch {
+    return [];
+  }
+});
+
+// ---------------------------------------------------------------------
+// 실적 (Finnhub earnings calendar) - 예정 실적
+// ---------------------------------------------------------------------
+const getEarnings = cache(async (ticker: string): Promise<FeedItem[]> => {
+  const key = process.env.STOCK_API_KEY;
+  if (!key) return [];
+
+  const now = new Date();
+  const to = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
+
+  try {
+    const res = await fetch(
+      `https://finnhub.io/api/v1/calendar/earnings?from=${ymd(now)}&to=${ymd(
+        to,
+      )}&symbol=${encodeURIComponent(ticker)}&token=${key}`,
+      { next: { revalidate: 3600 } },
+    );
+    if (!res.ok) return [];
+
+    const data: {
+      earningsCalendar?: Array<{
+        date: string;
+        quarter?: number;
+        year?: number;
+        epsEstimate?: number | null;
+      }>;
+    } = await res.json();
+
+    const list = data.earningsCalendar ?? [];
+    return list.slice(0, 2).map((e) => ({
+      id: `e-${ticker}-${e.date}`,
+      ticker,
+      type: "earnings" as const,
+      title: `실적 발표 예정 (Q${e.quarter ?? "?"} ${e.year ?? ""}${
+        e.epsEstimate != null ? `, EPS 예상 $${e.epsEstimate}` : ""
+      })`,
+      url: null,
+      source: "Finnhub",
+      timestamp: Date.parse(e.date),
+      dateLabel: e.date,
+    }));
+  } catch {
+    return [];
+  }
+});
+
+// ---------------------------------------------------------------------
+// 통합 피드
+// ---------------------------------------------------------------------
+export function feedEnabled(): boolean {
+  return !!process.env.STOCK_API_KEY; // 뉴스·실적용 (공시는 키 불필요)
+}
+
+const MAX_TICKERS = 15;
+
+export async function getFeed(
+  tickers: string[],
+  filter?: FeedType,
+): Promise<FeedItem[]> {
+  const unique = [...new Set(tickers.map((t) => t.toUpperCase()))].slice(
+    0,
+    MAX_TICKERS,
+  );
+
+  const perTicker = await Promise.all(
+    unique.map(async (t) => {
+      const [news, filings, earnings] = await Promise.all([
+        getNews(t),
+        getFilings(t),
+        getEarnings(t),
+      ]);
+      return [...news, ...filings, ...earnings];
+    }),
+  );
+
+  let all = perTicker.flat();
+  if (filter) all = all.filter((i) => i.type === filter);
+  all.sort((a, b) => b.timestamp - a.timestamp);
+  return all;
+}

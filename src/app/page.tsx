@@ -1,65 +1,45 @@
-import Image from "next/image";
+import Link from "next/link";
+
+const nav = [
+  { href: "/dashboard", title: "대시보드", desc: "총 자산 · 전일 대비 · 종목 비중" },
+  { href: "/portfolio", title: "포트폴리오", desc: "보유 종목 입력 · 평가손익" },
+  { href: "/feed", title: "관심 & 소식", desc: "뉴스 · 공시 · 실적 일정" },
+];
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <main className="mx-auto flex min-h-screen max-w-2xl flex-col justify-center gap-8 p-8">
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">미국주식 자산 대시보드</h1>
+          <p className="mt-2 text-gray-500">
+            내 포트폴리오 현황과 관심 종목 소식을 한 곳에서.
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+        <Link
+          href="/login"
+          className="rounded border border-gray-300 px-3 py-1.5 text-sm hover:border-gray-500 dark:border-gray-700"
+        >
+          로그인
+        </Link>
+      </div>
+
+      <nav className="grid gap-4">
+        {nav.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className="rounded-lg border border-gray-200 p-5 transition hover:border-gray-400 dark:border-gray-800 dark:hover:border-gray-600"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+            <div className="text-lg font-semibold">{item.title}</div>
+            <div className="text-sm text-gray-500">{item.desc}</div>
+          </Link>
+        ))}
+      </nav>
+
+      <p className="text-xs text-gray-400">
+        ⚠️ 투자 참고용이며 투자자문이 아닙니다. 시세는 지연될 수 있습니다.
+      </p>
+    </main>
   );
 }
