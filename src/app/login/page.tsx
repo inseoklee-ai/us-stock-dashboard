@@ -31,7 +31,15 @@ export default async function LoginPage() {
       </div>
 
       {configured ? (
-        <AuthForm />
+        <>
+          <AuthForm />
+          <Link
+            href="/forgot-password"
+            className="text-sm text-gray-500 hover:text-gray-800 hover:underline dark:hover:text-gray-200"
+          >
+            비밀번호를 잊으셨나요?
+          </Link>
+        </>
       ) : (
         <div className="rounded-lg border border-amber-300 bg-amber-50 p-6 text-sm dark:border-amber-800 dark:bg-amber-950/30">
           <p className="font-medium">Supabase 설정이 필요합니다</p>
