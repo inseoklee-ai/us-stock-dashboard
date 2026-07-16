@@ -24,16 +24,10 @@ export default function ResetPasswordPage() {
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
-  const [detected, setDetected] = useState<string>(""); // 진단용
 
   useEffect(() => {
     const search = new URLSearchParams(window.location.search);
     const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
-    setDetected(
-      `query: [${[...search.keys()].join(", ") || "없음"}] / hash: [${
-        [...hash.keys()].join(", ") || "없음"
-      }]`,
-    );
 
     const errDesc =
       hash.get("error_description") ?? search.get("error_description");
@@ -147,10 +141,6 @@ export default function ResetPasswordPage() {
         <div className="space-y-3">
           <p className="text-sm text-red-600">
             {error ?? "유효한 재설정 링크로 접근해 주세요."}
-          </p>
-          {/* 진단용: 링크로 들어온 파라미터 확인 (문제 해결 후 제거) */}
-          <p className="rounded bg-gray-100 p-2 font-mono text-xs text-gray-500 dark:bg-gray-900">
-            진단: {detected}
           </p>
           <Link
             href="/forgot-password"
