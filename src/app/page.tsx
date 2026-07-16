@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
+import { SignOutButton } from "@/components/SignOutButton";
 
 const nav = [
   { href: "/dashboard", title: "대시보드", desc: "총 자산 · 전일 대비 · 종목 비중" },
@@ -6,22 +8,43 @@ const nav = [
   { href: "/feed", title: "관심 & 소식", desc: "뉴스 · 공시 · 실적 일정" },
 ];
 
-export default function Home() {
+export default async function Home() {
+  const configured =
+    !!process.env.NEXT_PUBLIC_SUPABASE_URL &&
+    !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  let userEmail: string | null = null;
+  if (configured) {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    userEmail = user?.email ?? null;
+  }
+
   return (
     <main className="mx-auto flex min-h-screen max-w-2xl flex-col justify-center gap-8 p-8">
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold">미국주식 자산 대시보드</h1>
           <p className="mt-2 text-gray-500">
             내 포트폴리오 현황과 관심 종목 소식을 한 곳에서.
           </p>
         </div>
-        <Link
-          href="/login"
-          className="rounded border border-gray-300 px-3 py-1.5 text-sm hover:border-gray-500 dark:border-gray-700"
-        >
-          로그인
-        </Link>
+
+        {userEmail ? (
+          <div className="flex shrink-0 flex-col items-end gap-1 text-sm">
+            <span className="text-gray-500">{userEmail}</span>
+            <SignOutButton />
+          </div>
+        ) : (
+          <Link
+            href="/login"
+            className="shrink-0 rounded border border-gray-300 px-3 py-1.5 text-sm hover:border-gray-500 dark:border-gray-700"
+          >
+            로그인
+          </Link>
+        )}
       </div>
 
       <nav className="grid gap-4">
