@@ -33,12 +33,12 @@
 
 ## 3. 구현 완료 기능 (MVP)
 
-### 3.1 인증
+### 3-1. 인증
 - 이메일/비밀번호 **회원가입 · 로그인 · 로그아웃** (Supabase Auth)
 - 이메일 확인 흐름(`/auth/confirm`) — 개발 편의로 현재 OFF, **배포 전 ON 필요**
 - Proxy(구 Middleware)로 세션 갱신 + 보호 경로(`/dashboard`, `/portfolio`) 접근 제어
 
-### 3.2 포트폴리오 (자산 관리)
+### 3-2. 포트폴리오 (자산 관리)
 - 보유 종목 **추가 / 수정 / 삭제** (RLS로 본인 데이터만)
   - 필드: 티커 · 수량 · 평균 매수단가(USD) · 매수 시점 환율
   - 각 행 "수정"으로 수량·평균단가·매수환율 일괄 편집
@@ -49,14 +49,14 @@
   - 환차손익 = 수량 × 매수가 × (현재환율 − 매수환율)
 - 색상: 한국식 (빨강=수익 / 파랑=손실)
 
-### 3.3 대시보드
+### 3-3. 대시보드
 - 스탯 카드: **총 자산(USD/KRW) · 전일 대비 등락 · 총 평가손익(환차 포함)**
 - **종목 비중 도넛 차트** (순수 SVG, 색맹 안전 팔레트, 9개↑는 "기타"로 묶음)
 
-### 3.4 관심 & 소식 피드
+### 3-4. 관심 & 소식 피드
 - **관심 종목 관리** (추가/삭제) + 보유 종목 자동 포함
 - 통합 피드 (원문 그대로, 최신순, 미래 실적 일정 상단):
-  - **뉴스**: Finnhub company-news
+  - **뉴스**: Finnhub company-news + Marketaux(감성분석 뱃지, 선택), URL 중복 제거
   - **공시**: SEC EDGAR (8-K, 10-Q, 10-K 등 주요 서식, 실제 문서 링크)
   - **실적**: Finnhub earnings calendar (예정 실적 + EPS 예상)
 - 필터 탭: 전체 / 뉴스 / 공시 / 실적
@@ -117,9 +117,12 @@
 |------|--------|-----|-----------|
 | 시세 | Finnhub `/quote` | 필요 (STOCK_API_KEY) | 60회/분 |
 | 뉴스 | Finnhub `/company-news` | 동일 키 | 60회/분 |
+| 뉴스(감성분석) | **Marketaux** `/v1/news/all` | 선택 (MARKETAUX_API_KEY) | 100회/일, 요청당 3건 |
 | 실적 | Finnhub `/calendar/earnings` | 동일 키 | 무료 확인됨 |
 | 환율 | Frankfurter (ECB) | 불필요 | 제한 없음 수준 |
 | 공시 | SEC EDGAR | 불필요 (User-Agent) | 공식·무료 |
+
+> 뉴스는 Finnhub + Marketaux를 함께 가져와 **URL 기준 중복 제거**. Marketaux 기사는 **감성점수(긍정=빨강/부정=파랑, ±0.15 이내 중립 숨김)** 뱃지 표시. 두 뉴스 키 모두 없으면 공시(SEC)만 표시.
 
 ---
 
@@ -171,3 +174,105 @@ npm run dev        # http://localhost:3000
 ```
 - `.env.local`에 Supabase 키 + `STOCK_API_KEY` 필요
 - `supabase/schema.sql`을 Supabase SQL Editor에서 실행
+
+---
+
+## 11. 작업 이력 (요청 → 진행/결과)
+
+아이디어부터 배포·운영까지 사용자 요청과 진행 내역을 시간순으로 정리한 로그.
+
+### 11-1. 기획
+- **요청**: "미국주식 투자자 자산확인 + 뉴스/기업정보 웹서비스"의 PRD를 위해 정할 것을 하나씩 물어봐 줘.
+- **진행**: 8가지 핵심 결정을 하나씩 질의응답 → 초기 PRD(`PRD_미국주식자산뉴스서비스.md`) 작성.
+  - 공개 서비스 / 수동 입력 / 지연 시세 / 뉴스+공시+실적 / 원문 그대로 / USD·KRW 둘 다 / 추이 단계적 / Next.js+Supabase.
+
+### 11-2. 기술 선택
+- **요청**: 어떤 프레임워크가 좋을지 3개 이상 장단점과 함께 추천.
+- **진행**: Next.js / SvelteKit / Nuxt / (Python 백엔드) 비교 → **Next.js + Supabase** 추천·확정.
+
+### 11-3. 프로젝트 세팅
+- **요청**: Next.js + Supabase 초기 세팅.
+- **진행**: `create-next-app`(TS·Tailwind·App Router) + `@supabase/ssr` 설치. 클라이언트 4종(client/server/admin/proxy), 라우트 뼈대, `schema.sql`(RLS) 작성. 빌드·라우트 검증.
+- **발견**: 설치된 Next.js가 16.2 → **Middleware가 Proxy로 개명**(`src/proxy.ts`, Node 런타임). 규칙 맞춰 작성.
+
+### 11-4. 포트폴리오 입력/목록
+- **요청**: 종목 입력 폼 + 보유 목록 테이블.
+- **진행**: Server Actions(추가·삭제, 인증+RLS), 입력 폼(useActionState), 보유 테이블(매수금액·합계). 검증은 빌드/렌더까지, 실동작은 Supabase+로그인 필요.
+
+### 11-5. 로그인 UI
+- **요청**: 로그인 UI.
+- **진행**: 이메일/비번 로그인·회원가입(탭 전환)·로그아웃, 이메일 확인 콜백(`/auth/confirm`), Proxy 보호 라우트 리다이렉트.
+
+### 11-6. Supabase 설정 (함께 단계별)
+- **요청**: 같이 단계별로 진행.
+- **진행**: 계정·프로젝트 생성 → API 키 3개 확보 → `.env.local` 입력(service_role는 그때 비워둠) → `schema.sql` 실행 → 개발 편의로 "Confirm email" OFF. 회원가입→로그인→종목추가 실동작 확인.
+- **트러블슈팅**: SQL 실행 시 한글 주석의 멀티바이트+줄바꿈이 클립보드에서 깨져 `for select` 문법오류 → 주석을 전부 영어로, drop-if-exists로 재작성해 해결.
+
+### 11-7. 시세 연동
+- **요청**: 시세 API 연동부터.
+- **진행**: **Finnhub** `/quote`(지연 시세, 현재가+전일종가) 선정. `STOCK_API_KEY` 발급·입력. 포트폴리오 테이블에 현재가·평가금액·평가손익(수익률) 표시(한국식 빨강수익/파랑손실). API 키 유효성 실제 호출로 검증.
+
+### 11-8. 환율 연동
+- **요청**: 환율 연동.
+- **진행**: **Frankfurter**(키 불필요, ECB) USD→KRW. 상단 요약 카드에 USD/KRW 총액·손익 표시. 계산을 `computePortfolio`로 공통화.
+
+### 11-9. 대시보드
+- **요청**: 대시보드.
+- **진행**: 총자산(USD/KRW)·전일 대비 등락(전일종가 활용)·종목 비중 **도넛 차트**(순수 SVG, dataviz 스킬의 검증된 팔레트). 미리보기 라우트로 시각 검증 후 삭제.
+
+### 11-10. 뉴스·공시·실적 피드
+- **요청**: 뉴스/공시/실적 피드.
+- **진행**: 뉴스(Finnhub company-news) + 공시(SEC EDGAR, 티커→CIK, 8-K/10-Q 등, URL HTTP 200 검증) + 실적(Finnhub earnings calendar). 관심종목(watchlist) CRUD, 필터 탭. 원문(영어) 그대로. 미리보기로 22건 렌더 검증.
+
+### 11-11. 환차손익
+- **요청**: 환차손익 구현.
+- **진행**: `holdings.buy_fx_rate`(매수 시점 환율) 컬럼 추가. 주식손익=수량×(현재가−매수가)×현재환율, 환차손익=수량×매수가×(현재환율−매수환율)로 분해. 요약카드·대시보드에 표시. 종목 추가 시 선택 입력(비우면 현재 환율).
+
+### 11-12. 종목 수정
+- **요청**: 기존 종목의 수량·평균단가(및 매수환율)도 수정 가능하게.
+- **진행**: 행 단위 "수정" 토글(EditableHoldingRow) + `updateHolding`으로 통합. 매수환율 전용 편집(BuyFxCell)은 여기에 흡수·정리.
+
+### 11-13. 최종 PRD 정리
+- **요청**: 작업 전부 반영한 PRD 정리.
+- **진행**: 실제 구현 기준 `PRD.md`(이 문서) 작성. 두 PRD 차이(기획본 vs as-built) 설명.
+
+### 11-14. 보안/설정 점검
+- **요청**: API 키·DB 정보를 코드가 아닌 환경변수로, `.env`는 git 제외. 비밀번호 해시 여부 확인.
+- **진행**: 코드에 하드코딩 없음(전부 `process.env`), `.gitignore`가 `.env*` 차단, git 추적 `.env` 0개 확인. 비밀번호는 Supabase Auth가 bcrypt 해시로 저장(우리 코드는 원문 미접근) 설명.
+
+### 11-15. 입력 검증
+- **요청**: 사용자 입력 검증.
+- **진행**: `src/lib/validation.ts` 공용 검증기(티커·수량·단가·환율·이메일·비번, 상한값·트림·정규화). 조용히 실패하던 종목수정·관심종목추가를 useActionState로 바꿔 오류 메시지 표시. 20개 케이스 실제 테스트.
+
+### 11-16. Vercel 배포
+- **요청**: Vercel 배포 진행.
+- **진행**: 프로덕션 빌드 검증 → GitHub **비공개** repo 생성·push(gh CLI) → Vercel 연결 → 환경변수 입력 → 배포. cron 스텁은 배포 오류 방지로 vercel.json 제거(후에 재추가).
+- **트러블슈팅**: 배포 보호(로그인 잠금) 해제, 깨끗한 `us-stock-dashboard.vercel.app`은 선점되어 스코프 접미사 붙음.
+
+### 11-17. 비밀번호 재설정
+- **요청**: 방문자 비밀번호 찾기(아이디 찾기는 이메일=아이디라 미구현).
+- **진행**: `/forgot-password`(resetPasswordForEmail) + `/reset-password`(재설정) + 로그인 링크.
+- **트러블슈팅**: 기본 메일 발송 제한 → **Gmail SMTP** 커스텀 연결(앱 비밀번호). SMTP 붙이니 템플릿 편집 잠금 해제 → Reset Password 템플릿을 `token_hash` 방식으로 수정 → 안정 작동.
+
+### 11-18. 자산 추이 그래프 + 자동 기록(cron)
+- **요청**: 자산 추이 그래프 만들기 + cron 자동 기록 + 첫날부터 0-기준선으로 즉시 표시.
+- **진행**: 방문 시 오늘 자산 스냅샷 upsert(RLS insert/update 정책 추가) + SVG 추이 그래프. 1점만 있으면 0에서 시작하는 선 표시. 이후 `/api/cron/snapshot` 배치 구현(service_role) + `vercel.json` 매일 22:00 UTC 크론, 수동 호출로 recorded:1 검증.
+
+### 11-19. UX 개선
+- **요청**: 로딩 표시 / 홈에서 로그인 상태 표시 / 반복된 주소 정리.
+- **진행**: 페이지 이동 스피너(loading.tsx) + 삭제·제거 버튼 진행표시(SubmitButton). 홈에 로그인 시 이메일+로그아웃 표시. Vercel 팀 슬러그를 `modu-rich`로 변경해 주소 정리 → Supabase Site URL/Redirect URLs 갱신.
+
+### 11-20. 뉴스 소스 추가 (Marketaux)
+- **요청**: 소식 가져올 다른 API 검토 → Tiingo 시도 → 무료 대안 Marketaux로 확정.
+- **진행**: 처음 Tiingo를 붙였으나 계정에 News API 권한 없음(403 확인) → 무료 티어에서 실제 뉴스가 나오는 **Marketaux**로 교체. `getMarketauxNews`(선택 키 `MARKETAUX_API_KEY`, 종목당 3건, 30분 캐시), `FeedItem.sentiment` 필드 + FeedList **감성 뱃지**(긍정 빨강/부정 파랑, ±0.15 중립 숨김). Finnhub와 URL 중복 제거. 실제 키로 HTTP 200·응답 구조 일치 검증.
+- **주의**: 무료 100회/일, 요청당 3건. 프로덕션은 Vercel 환경변수에 `MARKETAUX_API_KEY` 추가 필요.
+
+### 11-21. 진행 중 / 보류
+- **AI 한글 요약**(뉴스 원문 요약): 착수했으나 진행 중 보류. Claude API(사용량 과금, Haiku 후보) + 캐싱·지연호출 설계까지 논의.
+
+---
+
+### 최종 배포 정보
+- **공개 URL**: https://us-stock-dashboard-modu-rich.vercel.app
+- **저장소**: github.com/cjwmanelf/us-stock-dashboard (비공개), `main` push 시 Vercel 자동 배포
+- **외부 연동**: Supabase(인증·DB), Finnhub(시세·뉴스·실적), Frankfurter(환율), SEC EDGAR(공시), Gmail SMTP(메일)

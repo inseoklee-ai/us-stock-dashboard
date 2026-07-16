@@ -2,7 +2,7 @@ import { cache } from "react";
 
 /**
  * 관심/보유 종목의 소식 피드.
- * - 뉴스: Finnhub company-news (STOCK_API_KEY)
+ * - 뉴스: Finnhub company-news (STOCK_API_KEY) + Tiingo news (TIINGO_API_KEY, 선택)
  * - 공시: SEC EDGAR (공식, 키 불필요, User-Agent 필요)
  * - 실적: Finnhub earnings calendar (예정 실적)
  * 서버 전용 모듈.
@@ -19,6 +19,7 @@ export type FeedItem = {
   source: string;
   timestamp: number; // 정렬용 (ms)
   dateLabel: string; // 표시용 (YYYY-MM-DD)
+  sentiment?: number | null; // -1(부정) ~ 1(긍정), 뉴스에만 (Marketaux)
 };
 
 function ymd(d: Date): string {
@@ -71,6 +72,60 @@ const getNews = cache(async (ticker: string): Promise<FeedItem[]> => {
         timestamp: (a.datetime ?? 0) * 1000,
         dateLabel: ymd(new Date((a.datetime ?? 0) * 1000)),
       }));
+  } catch {
+    return [];
+  }
+});
+
+// ---------------------------------------------------------------------
+// 뉴스 (Marketaux) - 선택 소스 (MARKETAUX_API_KEY 있을 때만), 감성점수 포함
+// 무료 티어: 100회/일, 요청당 기사 3건.
+// ---------------------------------------------------------------------
+const getMarketauxNews = cache(async (ticker: string): Promise<FeedItem[]> => {
+  const key = process.env.MARKETAUX_API_KEY;
+  if (!key) return [];
+
+  try {
+    const res = await fetch(
+      `https://api.marketaux.com/v1/news/all?symbols=${encodeURIComponent(
+        ticker,
+      )}&filter_entities=true&language=en&limit=3&api_token=${key}`,
+      { next: { revalidate: 1800 } }, // 30분
+    );
+    if (!res.ok) return []; // 401/402(한도)/403 등이면 빈 결과
+
+    const data: {
+      data?: Array<{
+        uuid?: string;
+        title?: string;
+        url?: string;
+        source?: string;
+        published_at?: string;
+        entities?: Array<{ symbol?: string; sentiment_score?: number | null }>;
+      }>;
+    } = await res.json();
+
+    const list = data.data ?? [];
+    return list
+      .filter((a) => a.title && a.published_at)
+      .map((a) => {
+        // 이 종목에 해당하는 감성점수 우선, 없으면 첫 엔티티
+        const ent =
+          a.entities?.find(
+            (e) => e.symbol?.toUpperCase() === ticker.toUpperCase(),
+          ) ?? a.entities?.[0];
+        return {
+          id: `mx-${ticker}-${a.uuid ?? a.published_at}`,
+          ticker,
+          type: "news" as const,
+          title: a.title!,
+          url: a.url ?? null,
+          source: a.source ?? "Marketaux",
+          timestamp: Date.parse(a.published_at!),
+          dateLabel: (a.published_at ?? "").slice(0, 10),
+          sentiment: ent?.sentiment_score ?? null,
+        };
+      });
   } catch {
     return [];
   }
@@ -237,16 +292,28 @@ export async function getFeed(
 
   const perTicker = await Promise.all(
     unique.map(async (t) => {
-      const [news, filings, earnings] = await Promise.all([
+      const [news, marketauxNews, filings, earnings] = await Promise.all([
         getNews(t),
+        getMarketauxNews(t),
         getFilings(t),
         getEarnings(t),
       ]);
-      return [...news, ...filings, ...earnings];
+      return [...news, ...marketauxNews, ...filings, ...earnings];
     }),
   );
 
   let all = perTicker.flat();
+
+  // 뉴스는 Finnhub·Tiingo가 같은 기사를 줄 수 있어 URL로 중복 제거
+  const seenUrls = new Set<string>();
+  all = all.filter((i) => {
+    if (i.type !== "news" || !i.url) return true;
+    const u = i.url.split("?")[0]; // 쿼리스트링 무시
+    if (seenUrls.has(u)) return false;
+    seenUrls.add(u);
+    return true;
+  });
+
   if (filter) all = all.filter((i) => i.type === filter);
   all.sort((a, b) => b.timestamp - a.timestamp);
   return all;

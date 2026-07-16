@@ -18,6 +18,24 @@ const TYPE_META: Record<FeedType, { label: string; className: string }> = {
   },
 };
 
+// 감성점수(-1~1) → 뱃지. 한국식(긍정=빨강, 부정=파랑). ±0.15 이내는 중립(표시 안 함).
+function sentimentBadge(score: number | null | undefined) {
+  if (score == null || Math.abs(score) < 0.15) return null;
+  const positive = score > 0;
+  return (
+    <span
+      className={`shrink-0 rounded px-1.5 py-0.5 text-xs font-medium ${
+        positive
+          ? "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300"
+          : "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+      }`}
+      title={`감성점수 ${score.toFixed(2)}`}
+    >
+      {positive ? "긍정" : "부정"}
+    </span>
+  );
+}
+
 export function FeedList({ items }: { items: FeedItem[] }) {
   if (items.length === 0) {
     return (
@@ -41,6 +59,7 @@ export function FeedList({ items }: { items: FeedItem[] }) {
             <div className="min-w-0 flex-1">
               <div className="text-sm">
                 <span className="font-semibold">{item.ticker}</span>{" "}
+                {sentimentBadge(item.sentiment)}{" "}
                 <span className="text-gray-800 dark:text-gray-200">
                   {item.title}
                 </span>
