@@ -31,6 +31,9 @@ const secHeaders = () => ({
     process.env.SEC_USER_AGENT ?? "us-stock-dashboard example@example.com",
 });
 
+// 소스별 최대 대기 시간(ms). 넘으면 해당 소스는 건너뛰고 받은 것부터 표시.
+const FEED_TIMEOUT_MS = 5000;
+
 // ---------------------------------------------------------------------
 // 뉴스 (Finnhub company-news)
 // ---------------------------------------------------------------------
@@ -46,7 +49,10 @@ const getNews = cache(async (ticker: string): Promise<FeedItem[]> => {
       `https://finnhub.io/api/v1/company-news?symbol=${encodeURIComponent(
         ticker,
       )}&from=${ymd(from)}&to=${ymd(now)}&token=${key}`,
-      { next: { revalidate: 1800 } }, // 30분
+      {
+        next: { revalidate: 1800 },
+        signal: AbortSignal.timeout(FEED_TIMEOUT_MS),
+      }, // 30분
     );
     if (!res.ok) return [];
 
@@ -90,7 +96,10 @@ const getMarketauxNews = cache(async (ticker: string): Promise<FeedItem[]> => {
       `https://api.marketaux.com/v1/news/all?symbols=${encodeURIComponent(
         ticker,
       )}&filter_entities=true&language=en&limit=3&api_token=${key}`,
-      { next: { revalidate: 1800 } }, // 30분
+      {
+        next: { revalidate: 1800 },
+        signal: AbortSignal.timeout(FEED_TIMEOUT_MS),
+      }, // 30분
     );
     if (!res.ok) return []; // 401/402(한도)/403 등이면 빈 결과
 
@@ -141,6 +150,7 @@ const getCikMap = cache(async (): Promise<Record<string, string>> => {
     const res = await fetch("https://www.sec.gov/files/company_tickers.json", {
       headers: secHeaders(),
       next: { revalidate: 86400 },
+      signal: AbortSignal.timeout(FEED_TIMEOUT_MS),
     });
     if (!res.ok) return {};
     const data: Record<string, { cik_str: number; ticker: string }> =
@@ -176,7 +186,11 @@ const getFilings = cache(async (ticker: string): Promise<FeedItem[]> => {
   try {
     const res = await fetch(
       `https://data.sec.gov/submissions/CIK${cik}.json`,
-      { headers: secHeaders(), next: { revalidate: 3600 } },
+      {
+        headers: secHeaders(),
+        next: { revalidate: 3600 },
+        signal: AbortSignal.timeout(FEED_TIMEOUT_MS),
+      },
     );
     if (!res.ok) return [];
 
@@ -241,7 +255,10 @@ const getEarnings = cache(async (ticker: string): Promise<FeedItem[]> => {
       `https://finnhub.io/api/v1/calendar/earnings?from=${ymd(now)}&to=${ymd(
         to,
       )}&symbol=${encodeURIComponent(ticker)}&token=${key}`,
-      { next: { revalidate: 3600 } },
+      {
+        next: { revalidate: 3600 },
+        signal: AbortSignal.timeout(FEED_TIMEOUT_MS),
+      },
     );
     if (!res.ok) return [];
 

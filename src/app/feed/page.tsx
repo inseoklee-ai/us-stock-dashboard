@@ -71,6 +71,7 @@ export default async function FeedPage({
       ? rawType
       : undefined;
 
+  // 소스별 5초 타임아웃(feed.ts) → 느린 소스는 건너뛰고 받은 것부터. 최대 ~5초 내 반환.
   const items = tickers.length > 0 ? await getFeed(tickers, filter) : [];
 
   return (
