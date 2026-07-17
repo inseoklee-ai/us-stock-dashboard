@@ -165,6 +165,18 @@
 - **개인정보**: 로그인 정보만 수집, 증권사 연동 없음 (민감정보 최소화)
 - **뉴스 링크**: Finnhub 무료 티어는 원문으로 리다이렉트하는 URL 제공
 
+### 9-1. 보안 점검 (2026-07-17 코드 기준 확인)
+
+| 항목 | 상태 | 근거 |
+|------|------|------|
+| 비밀값을 코드가 아닌 환경변수로 | ✅ | 하드코딩 0건, 전부 `process.env`. service_role 키는 `NEXT_PUBLIC_` 아님·cron 라우트(서버)에서만 사용. `.env*`/`.vercel` git 제외 |
+| 백엔드 입력 검증 | ✅ | `"use server"` 액션이 `validation.ts`로 재검증(티커·수량·단가·환율 상한 포함) + DB CHECK 제약(`quantity>0`, `avg_price>=0`) 이중 방어 |
+| Supabase RLS | ✅ | 5개 테이블 모두 RLS 활성. holdings/watchlist/snapshots는 `auth.uid()=user_id`, quotes_cache/feed_items는 읽기만(쓰기 정책 없음 → service_role만) |
+| 인가(권한 확인) | ✅ | 모든 액션이 `auth.getUser()` 확인 후 거부, 변경은 `.eq("user_id", user.id)`+RLS 이중. Proxy가 `/dashboard`·`/portfolio` 보호. `getSession` 대신 `getUser()` 사용 |
+
+- **적용된 하드닝**: `cron/feed` 라우트가 `CRON_SECRET` 미설정 시 `Bearer undefined`로 우회되던 문제 수정 → `if (!process.env.CRON_SECRET || ...)` 가드로 전원 차단(snapshot 라우트와 동일). 401 차단 검증 완료.
+- **남은 권장**: 배포 전 Supabase "Confirm email" 재활성화, 공유 캐시 테이블 쓰기는 계속 service_role로만.
+
 ---
 
 ## 10. 로컬 실행
@@ -278,7 +290,11 @@ npm run dev        # http://localhost:3000
   - **전 페이지 리디자인**: 홈(히어로+아이콘 네비 카드), 대시보드(스탯카드·도넛·추이), 포트폴리오(요약·입력폼·표·행편집), 관심&소식(관심목록·피드+감성뱃지), 로그인·비밀번호(카드형 중앙정렬). 공용 `Card` 컴포넌트.
 - **검증**: 미리보기(목데이터)로 라이트/다크 양쪽 색·카드·표·뱃지 확인, 콘솔 에러 0, 프로덕션 빌드 성공.
 
-### 11-22. 진행 중 / 보류
+### 11-22. 보안 점검 & 하드닝
+- **요청**: 4대 보안 체크(비밀값 환경변수화 / 백엔드 검증 / RLS / 인가) 확인.
+- **진행**: 코드로 4항목 모두 충족 확인(→ 9-1 표). 발견한 소소한 취약점 1건 수정 — `cron/feed`가 `CRON_SECRET` 미설정 시 `Bearer undefined`로 우회 가능하던 것을 snapshot 라우트와 동일한 `!process.env.CRON_SECRET` 가드로 차단. 401 응답 검증 완료.
+
+### 11-23. 진행 중 / 보류
 - **AI 한글 요약**(뉴스 원문 요약): 착수했으나 진행 중 보류. Claude API(사용량 과금, Haiku 후보) + 캐싱·지연호출 설계까지 논의.
 
 ---
