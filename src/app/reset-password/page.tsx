@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { createBrowserClient } from "@supabase/ssr";
 import { type EmailOtpType } from "@supabase/supabase-js";
 import { parsePassword } from "@/lib/validation";
+import { Card } from "@/components/Card";
 
 const EXPIRED = "링크가 만료되었거나 유효하지 않습니다. 다시 요청해 주세요.";
 
@@ -99,56 +100,58 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-6 p-8">
-      <h1 className="text-2xl font-bold">새 비밀번호 설정</h1>
+    <main className="mx-auto flex min-h-[calc(100vh-3.5rem)] max-w-md flex-col justify-center gap-5 px-4 py-10">
+      <h1 className="text-2xl font-bold tracking-tight">새 비밀번호 설정</h1>
 
       {checking ? (
-        <p className="text-sm text-gray-500">확인 중…</p>
+        <p className="text-sm text-muted">확인 중…</p>
       ) : ready ? (
-        <form onSubmit={onSubmit} className="space-y-4">
-          <label className="block space-y-1 text-sm">
-            <span className="text-gray-500">새 비밀번호 (6자 이상)</span>
-            <input
-              name="password"
-              type="password"
-              required
-              minLength={6}
-              autoComplete="new-password"
-              className="w-full rounded border border-gray-300 px-3 py-2 dark:border-gray-700 dark:bg-transparent"
-            />
-          </label>
-          <label className="block space-y-1 text-sm">
-            <span className="text-gray-500">새 비밀번호 확인</span>
-            <input
-              name="password2"
-              type="password"
-              required
-              minLength={6}
-              autoComplete="new-password"
-              className="w-full rounded border border-gray-300 px-3 py-2 dark:border-gray-700 dark:bg-transparent"
-            />
-          </label>
-          <button
-            type="submit"
-            disabled={pending}
-            className="w-full rounded bg-blue-600 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:opacity-50"
-          >
-            {pending ? "변경 중…" : "비밀번호 변경"}
-          </button>
-          {error && <p className="text-sm text-red-600">{error}</p>}
-        </form>
+        <Card className="p-6">
+          <form onSubmit={onSubmit} className="space-y-4">
+            <label className="block space-y-1 text-sm">
+              <span className="font-medium text-muted">새 비밀번호 (6자 이상)</span>
+              <input
+                name="password"
+                type="password"
+                required
+                minLength={6}
+                autoComplete="new-password"
+                className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-fg focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
+              />
+            </label>
+            <label className="block space-y-1 text-sm">
+              <span className="font-medium text-muted">새 비밀번호 확인</span>
+              <input
+                name="password2"
+                type="password"
+                required
+                minLength={6}
+                autoComplete="new-password"
+                className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-fg focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
+              />
+            </label>
+            <button
+              type="submit"
+              disabled={pending}
+              className="w-full rounded-lg bg-brand py-2.5 text-sm font-semibold text-brand-fg transition hover:bg-brand-strong disabled:opacity-50"
+            >
+              {pending ? "변경 중…" : "비밀번호 변경"}
+            </button>
+            {error && <p className="text-sm text-up">{error}</p>}
+          </form>
+        </Card>
       ) : (
-        <div className="space-y-3">
-          <p className="text-sm text-red-600">
+        <Card className="space-y-3 p-6">
+          <p className="text-sm text-up">
             {error ?? "유효한 재설정 링크로 접근해 주세요."}
           </p>
           <Link
             href="/forgot-password"
-            className="inline-block text-sm text-blue-600 hover:underline"
+            className="inline-block text-sm font-medium text-brand hover:underline"
           >
             재설정 링크 다시 요청하기
           </Link>
-        </div>
+        </Card>
       )}
     </main>
   );

@@ -15,7 +15,7 @@ type Props = {
 };
 
 const gainColor = (v: number) =>
-  v > 0 ? "text-red-600" : v < 0 ? "text-blue-600" : "text-gray-500";
+  v > 0 ? "text-up" : v < 0 ? "text-down" : "text-muted";
 
 export function PortfolioSummary({ totals, fx, quotesEnabled }: Props) {
   const showValue = quotesEnabled && totals.valuedAll;
@@ -33,19 +33,19 @@ export function PortfolioSummary({ totals, fx, quotesEnabled }: Props) {
     <div className="space-y-3">
       <div className="grid gap-3 sm:grid-cols-2">
         {/* 총 평가금액 */}
-        <div className="rounded-lg border border-gray-200 p-4 dark:border-gray-800">
-          <div className="text-xs text-gray-500">{mainLabel}</div>
-          <div className="mt-1 text-2xl font-bold tabular-nums">
+        <div className="themed rounded-2xl border border-line bg-surface p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+          <div className="text-xs font-medium text-muted">{mainLabel}</div>
+          <div className="mt-1.5 text-2xl font-bold tabular-nums">
             {formatUSD(usdMain)}
           </div>
-          <div className="text-sm text-gray-500 tabular-nums">
+          <div className="text-sm text-muted tabular-nums">
             {fx ? formatKRW(usdMain * fx.rate) : "원화 환산 불가"}
           </div>
         </div>
 
         {/* 총 평가손익 (+ 환차손익 분해) */}
-        <div className="rounded-lg border border-gray-200 p-4 dark:border-gray-800">
-          <div className="text-xs text-gray-500">총 평가손익</div>
+        <div className="themed rounded-2xl border border-line bg-surface p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+          <div className="text-xs font-medium text-muted">총 평가손익</div>
           {showValue ? (
             <>
               <div
@@ -65,13 +65,13 @@ export function PortfolioSummary({ totals, fx, quotesEnabled }: Props) {
               )}
               {totals.fxBreakdownAvailable && (
                 <div className="mt-1 flex gap-3 text-xs">
-                  <span className="text-gray-500">
+                  <span className="text-muted">
                     주식{" "}
                     <span className={gainColor(totals.totalStockGainKrw)}>
                       {formatSignedKRW(totals.totalStockGainKrw)}
                     </span>
                   </span>
-                  <span className="text-gray-500">
+                  <span className="text-muted">
                     환차{" "}
                     <span className={gainColor(totals.totalFxGainKrw)}>
                       {formatSignedKRW(totals.totalFxGainKrw)}
@@ -81,7 +81,7 @@ export function PortfolioSummary({ totals, fx, quotesEnabled }: Props) {
               )}
             </>
           ) : (
-            <div className="mt-1 text-2xl font-bold text-gray-400">—</div>
+            <div className="mt-1.5 text-2xl font-bold text-muted">—</div>
           )}
         </div>
       </div>
@@ -98,7 +98,7 @@ export function PortfolioSummary({ totals, fx, quotesEnabled }: Props) {
       )}
 
       {/* 적용 환율 */}
-      <p className="text-xs text-gray-400">
+      <p className="text-xs text-muted/80">
         {fx
           ? `적용 환율: $1 = ${formatKRW(fx.rate)}${fx.date ? ` (${fx.date} 기준)` : ""}`
           : "환율 정보를 가져오지 못했습니다. USD만 표시합니다."}

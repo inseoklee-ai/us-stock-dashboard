@@ -8,7 +8,7 @@ type Props = {
 };
 
 const gainColor = (v: number) =>
-  v > 0 ? "text-red-600" : v < 0 ? "text-blue-600" : "text-gray-500";
+  v > 0 ? "text-up" : v < 0 ? "text-down" : "text-muted";
 
 export function HoldingsTable({ totals, quotesEnabled }: Props) {
   const { rows, totalCost, totalValue, totalGain, totalGainPct, valuedAll } =
@@ -16,7 +16,7 @@ export function HoldingsTable({ totals, quotesEnabled }: Props) {
 
   if (rows.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-gray-300 p-8 text-center text-gray-400 dark:border-gray-700">
+      <div className="themed rounded-2xl border border-dashed border-line bg-surface p-10 text-center text-muted">
         아직 보유 종목이 없습니다. 위 폼에서 추가하세요.
       </div>
     );
@@ -25,10 +25,10 @@ export function HoldingsTable({ totals, quotesEnabled }: Props) {
   const showTotals = quotesEnabled && valuedAll;
 
   return (
-    <div className="overflow-x-auto">
+    <div className="themed overflow-x-auto rounded-2xl border border-line bg-surface p-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)] sm:p-5">
       <table className="w-full border-collapse text-sm">
         <thead>
-          <tr className="border-b border-gray-200 text-left text-gray-500 dark:border-gray-800">
+          <tr className="border-b border-line text-left text-muted">
             <th className="py-2 pr-4 font-medium">티커</th>
             <th className="py-2 pr-4 text-right font-medium">수량</th>
             <th className="py-2 pr-4 text-right font-medium">평균단가</th>
@@ -54,7 +54,7 @@ export function HoldingsTable({ totals, quotesEnabled }: Props) {
             </td>
             <td
               className={`py-2 pr-4 text-right tabular-nums ${
-                showTotals ? gainColor(totalGain) : "text-gray-400"
+                showTotals ? gainColor(totalGain) : "text-muted"
               }`}
             >
               {showTotals ? (
@@ -83,7 +83,7 @@ export function HoldingsTable({ totals, quotesEnabled }: Props) {
           종목은 매수금액으로 표시됩니다.
         </p>
       ) : (
-        <p className="mt-3 text-xs text-gray-400">
+        <p className="mt-3 text-xs text-muted/80">
           ※ 지연 시세 기준(약 15분). 각 행의 &ldquo;수정&rdquo;으로 수량·평균단가·매수환율을
           고칠 수 있습니다.
         </p>

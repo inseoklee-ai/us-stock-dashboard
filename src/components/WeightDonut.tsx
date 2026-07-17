@@ -64,13 +64,13 @@ export function WeightDonut({ rows }: { rows: HoldingRow[] }) {
   });
 
   return (
-    <div className="viz-donut rounded-lg border border-gray-200 p-4 dark:border-gray-800">
+    <div className="viz-donut themed rounded-2xl border border-line bg-surface p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
       <style>{`
         .viz-donut{--s1:#2a78d6;--s2:#1baf7a;--s3:#eda100;--s4:#008300;--s5:#4a3aa7;--s6:#e34948;--s7:#e87ba4;--s8:#eb6834;--s-other:#898781;}
-        @media (prefers-color-scheme: dark){.viz-donut{--s1:#3987e5;--s2:#199e70;--s3:#c98500;--s4:#008300;--s5:#9085e9;--s6:#e66767;--s7:#d55181;--s8:#d95926;--s-other:#898781;}}
+        [data-theme="dark"] .viz-donut{--s1:#3987e5;--s2:#199e70;--s3:#c98500;--s4:#008300;--s5:#9085e9;--s6:#e66767;--s7:#d55181;--s8:#d95926;--s-other:#898781;}
       `}</style>
 
-      <h2 className="mb-3 text-sm font-medium text-gray-500">종목 비중</h2>
+      <h2 className="mb-3 text-sm font-medium text-muted">종목 비중</h2>
 
       <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-center">
         {/* 도넛 */}
@@ -99,7 +99,7 @@ export function WeightDonut({ rows }: { rows: HoldingRow[] }) {
             x="90"
             y="84"
             textAnchor="middle"
-            className="fill-gray-500 text-[10px]"
+            className="fill-current text-[10px] opacity-60"
           >
             총 평가금액
           </text>
@@ -123,10 +123,10 @@ export function WeightDonut({ rows }: { rows: HoldingRow[] }) {
                 aria-hidden
               />
               <span className="font-medium">{s.label}</span>
-              <span className="ml-auto tabular-nums text-gray-500">
+              <span className="ml-auto tabular-nums text-muted">
                 {s.pct.toFixed(1)}%
               </span>
-              <span className="w-24 text-right tabular-nums text-gray-400">
+              <span className="w-24 text-right tabular-nums text-muted/70">
                 {formatUSD(s.amount)}
               </span>
             </li>

@@ -91,6 +91,7 @@
 | 대시보드 | `src/app/dashboard/`, `src/components/WeightDonut.tsx` |
 | 피드 | `src/app/feed/`, `src/components/{WatchlistManager,FeedList}.tsx` |
 | 배치(뼈대) | `src/app/api/cron/{snapshot,feed}/route.ts`, `vercel.json` |
+| 디자인/테마 | `src/app/globals.css`(토큰·다크변형), `src/app/layout.tsx`(쿠키 테마·Noto Sans KR), `src/components/{AppHeader,HeaderNav,ThemeToggle,Card}.tsx` |
 
 > ⚠️ Next.js 16 주의: Middleware → **Proxy**(`src/proxy.ts`, Node.js 런타임)로 명칭 변경됨.
 
@@ -267,7 +268,17 @@ npm run dev        # http://localhost:3000
 - **진행**: 처음 Tiingo를 붙였으나 계정에 News API 권한 없음(403 확인) → 무료 티어에서 실제 뉴스가 나오는 **Marketaux**로 교체. `getMarketauxNews`(선택 키 `MARKETAUX_API_KEY`, 종목당 3건, 30분 캐시), `FeedItem.sentiment` 필드 + FeedList **감성 뱃지**(긍정 빨강/부정 파랑, ±0.15 중립 숨김). Finnhub와 URL 중복 제거. 실제 키로 HTTP 200·응답 구조 일치 검증.
 - **주의**: 무료 100회/일, 요청당 3건. 프로덕션은 Vercel 환경변수에 `MARKETAUX_API_KEY` 추가 필요.
 
-### 11-21. 진행 중 / 보류
+### 11-21. GUI 디자인 (토스 스타일 테마)
+- **요청**: GUI를 자산관리 테마로 꾸미기 → 토스 스타일(밝고 깔끔) + 시스템 자동 감지 + 다크 토글로 확정.
+- **진행**:
+  - **테마 토큰 시스템**(`globals.css`): 토스풍 팔레트(배경 `#F2F4F6`·카드 흰색·포인트 블루 `#3182F6`·라운드 16px·부드러운 그림자), 라이트/다크 양쪽 CSS 변수. 등락색은 한국식 유지(상승 `#F04452`/하락 `#3182F6`). 유틸 노출: `bg-surface`·`text-fg`·`text-muted`·`border-line`·`text-up`·`text-down` 등.
+  - **다크 모드**: **쿠키 기반 서버 렌더링**(루트 레이아웃이 `theme` 쿠키를 읽어 `data-theme` 선렌더) → 로드 깜빡임·하이드레이션 경고 없음. 쿠키 없으면 CSS 미디어쿼리로 시스템 자동. `ThemeToggle`(클릭 시 `data-theme`+쿠키 1년 저장). Tailwind `dark:` 변형도 속성/미디어 양쪽 대응.
+  - **폰트**: Noto Sans KR(한국어), 메타데이터·타이틀 "모두리치".
+  - **공용 헤더**(`AppHeader`+`HeaderNav`+`ThemeToggle`): 브랜드(₩ 모두리치)+네비(활성 탭 강조)+토글+로그인/로그아웃, sticky+블러. 페이지마다 있던 `← 홈`·이메일·로그아웃 줄을 헤더로 일원화.
+  - **전 페이지 리디자인**: 홈(히어로+아이콘 네비 카드), 대시보드(스탯카드·도넛·추이), 포트폴리오(요약·입력폼·표·행편집), 관심&소식(관심목록·피드+감성뱃지), 로그인·비밀번호(카드형 중앙정렬). 공용 `Card` 컴포넌트.
+- **검증**: 미리보기(목데이터)로 라이트/다크 양쪽 색·카드·표·뱃지 확인, 콘솔 에러 0, 프로덕션 빌드 성공.
+
+### 11-22. 진행 중 / 보류
 - **AI 한글 요약**(뉴스 원문 요약): 착수했으나 진행 중 보류. Claude API(사용량 과금, Haiku 후보) + 캐싱·지연호출 설계까지 논의.
 
 ---

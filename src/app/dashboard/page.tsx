@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { SignOutButton } from "@/components/SignOutButton";
+import { Card } from "@/components/Card";
 import { WeightDonut } from "@/components/WeightDonut";
 import { AssetHistoryChart } from "@/components/AssetHistoryChart";
 import { getQuotes, quotesEnabled } from "@/lib/quotes";
@@ -16,16 +16,13 @@ import {
 import type { Holding } from "@/lib/types";
 
 const gainColor = (v: number) =>
-  v > 0 ? "text-red-600" : v < 0 ? "text-blue-600" : "text-gray-500";
+  v > 0 ? "text-up" : v < 0 ? "text-down" : "text-muted";
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <main className="mx-auto max-w-3xl p-8">
-      <Link href="/" className="text-sm text-gray-500 hover:underline">
-        ← 홈
-      </Link>
-      <h1 className="mt-4 text-2xl font-bold">대시보드</h1>
-      <div className="mt-6 space-y-6">{children}</div>
+    <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
+      <h1 className="text-2xl font-bold tracking-tight">대시보드</h1>
+      <div className="mt-6 space-y-5">{children}</div>
     </main>
   );
 }
@@ -38,10 +35,10 @@ function StatCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-lg border border-gray-200 p-4 dark:border-gray-800">
-      <div className="text-xs text-gray-500">{label}</div>
-      <div className="mt-1">{children}</div>
-    </div>
+    <Card className="p-4">
+      <div className="text-xs font-medium text-muted">{label}</div>
+      <div className="mt-1.5">{children}</div>
+    </Card>
   );
 }
 
@@ -115,20 +112,10 @@ export default async function DashboardPage() {
 
   return (
     <Shell>
-      <div className="flex items-center justify-between text-sm">
-        <span className="text-gray-500">{user.email}</span>
-        <div className="flex gap-4">
-          <Link href="/portfolio" className="text-blue-600 hover:underline">
-            포트폴리오 관리
-          </Link>
-          <SignOutButton />
-        </div>
-      </div>
-
       {holdings.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-gray-300 p-8 text-center text-gray-400 dark:border-gray-700">
+        <div className="themed rounded-2xl border border-dashed border-line bg-surface p-10 text-center text-muted">
           보유 종목이 없습니다.{" "}
-          <Link href="/portfolio" className="text-blue-600 hover:underline">
+          <Link href="/portfolio" className="font-medium text-brand hover:underline">
             포트폴리오
           </Link>
           에서 종목을 추가하세요.
@@ -201,7 +188,7 @@ export default async function DashboardPage() {
 
           <AssetHistoryChart points={historyPoints} />
 
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-muted/80">
             {fx
               ? `적용 환율: $1 = ${formatKRW(fx.rate)}${fx.date ? ` (${fx.date} 기준)` : ""} · `
               : ""}

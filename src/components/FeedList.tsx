@@ -39,14 +39,14 @@ function sentimentBadge(score: number | null | undefined) {
 export function FeedList({ items }: { items: FeedItem[] }) {
   if (items.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-gray-300 p-8 text-center text-gray-400 dark:border-gray-700">
+      <div className="themed rounded-2xl border border-dashed border-line bg-surface p-10 text-center text-muted">
         표시할 소식이 없습니다.
       </div>
     );
   }
 
   return (
-    <ul className="divide-y divide-gray-100 dark:divide-gray-900">
+    <ul className="themed divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface px-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
       {items.map((item) => {
         const meta = TYPE_META[item.type];
         const content = (
@@ -64,7 +64,7 @@ export function FeedList({ items }: { items: FeedItem[] }) {
                   {item.title}
                 </span>
               </div>
-              <div className="mt-0.5 text-xs text-gray-400">
+              <div className="mt-0.5 text-xs text-muted/80">
                 {item.source} · {item.dateLabel}
                 {item.url ? " · 원문 보기 →" : ""}
               </div>
@@ -79,7 +79,7 @@ export function FeedList({ items }: { items: FeedItem[] }) {
                 href={item.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block transition hover:bg-gray-50 dark:hover:bg-gray-900/50"
+                className="-mx-4 block px-4 transition hover:bg-surface-2"
               >
                 {content}
               </a>

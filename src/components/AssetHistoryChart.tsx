@@ -5,9 +5,9 @@ type Point = { date: string; krw: number };
 export function AssetHistoryChart({ points }: { points: Point[] }) {
   if (points.length === 0) {
     return (
-      <div className="rounded-lg border border-gray-200 p-4 dark:border-gray-800">
-        <h2 className="mb-2 text-sm font-medium text-gray-500">자산 추이</h2>
-        <p className="rounded-lg border border-dashed border-gray-300 p-6 text-center text-sm text-gray-400 dark:border-gray-700">
+      <div className="themed rounded-2xl border border-line bg-surface p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+        <h2 className="mb-2 text-sm font-medium text-muted">자산 추이</h2>
+        <p className="rounded-xl border border-dashed border-line p-6 text-center text-sm text-muted">
           아직 기록이 없습니다. 대시보드를 방문하면 그날의 자산이 기록됩니다.
         </p>
       </div>
@@ -47,13 +47,13 @@ export function AssetHistoryChart({ points }: { points: Point[] }) {
   const last = chartPoints[chartPoints.length - 1];
   const realLast = points[points.length - 1];
   const up = last.krw >= first.krw;
-  const strokeCls = up ? "stroke-red-500" : "stroke-blue-500";
-  const fillCls = up ? "fill-red-500" : "fill-blue-500";
+  const strokeCls = up ? "stroke-up" : "stroke-down";
+  const fillCls = up ? "fill-up" : "fill-down";
 
   return (
-    <div className="rounded-lg border border-gray-200 p-4 dark:border-gray-800">
+    <div className="themed rounded-2xl border border-line bg-surface p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
       <div className="mb-2 flex items-baseline justify-between">
-        <h2 className="text-sm font-medium text-gray-500">자산 추이 (원화)</h2>
+        <h2 className="text-sm font-medium text-muted">자산 추이 (원화)</h2>
         <span className="text-sm font-bold tabular-nums">
           {formatKRW(realLast.krw)}
         </span>
@@ -85,28 +85,28 @@ export function AssetHistoryChart({ points }: { points: Point[] }) {
         ))}
 
         {/* y 최대/최소 라벨 */}
-        <text x={padL} y={yAt(max) - 4} className="fill-gray-400 text-[10px]">
+        <text x={padL} y={yAt(max) - 4} className="fill-current text-[10px] opacity-50">
           {formatKRWCompact(max)}
         </text>
-        <text x={padL} y={yAt(min) + 12} className="fill-gray-400 text-[10px]">
+        <text x={padL} y={yAt(min) + 12} className="fill-current text-[10px] opacity-50">
           {formatKRWCompact(min)}
         </text>
 
         {/* x 시작/끝 날짜 */}
-        <text x={padL} y={H - 8} className="fill-gray-400 text-[10px]">
+        <text x={padL} y={H - 8} className="fill-current text-[10px] opacity-50">
           {first.date}
         </text>
         <text
           x={W - padR}
           y={H - 8}
           textAnchor="end"
-          className="fill-gray-400 text-[10px]"
+          className="fill-current text-[10px] opacity-50"
         >
           {last.date}
         </text>
       </svg>
 
-      <p className="mt-1 text-xs text-gray-400">
+      <p className="mt-1 text-xs text-muted/80">
         {synthetic
           ? "※ 첫 기록이라 0에서 시작한 것으로 표시했어요. 방문이 쌓이면 실제 추이로 바뀝니다."
           : "※ 대시보드를 방문한 날의 자산이 기록됩니다. 색: 시작 대비 상승(빨강)·하락(파랑)."}

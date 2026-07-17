@@ -22,17 +22,17 @@ export function AddWatchForm() {
           required
           placeholder="티커 추가 (예: TSLA)"
           autoComplete="off"
-          className="w-44 rounded border border-gray-300 px-2 py-1.5 text-sm uppercase dark:border-gray-700 dark:bg-transparent"
+          className="w-44 rounded-lg border border-line bg-surface px-3 py-1.5 text-sm uppercase text-fg placeholder:text-muted/60 placeholder:normal-case focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
         />
         <button
           type="submit"
           disabled={pending}
-          className="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+          className="rounded-lg bg-brand px-3 py-1.5 text-sm font-semibold text-brand-fg hover:bg-brand-strong disabled:opacity-50"
         >
           {pending ? "추가 중…" : "추가"}
         </button>
       </form>
-      {state.error && <p className="mt-1 text-sm text-red-600">{state.error}</p>}
+      {state.error && <p className="mt-1 text-sm text-up">{state.error}</p>}
     </div>
   );
 }

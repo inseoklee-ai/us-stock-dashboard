@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { SignOutButton } from "@/components/SignOutButton";
 import { WatchlistManager } from "@/components/WatchlistManager";
 import { FeedList } from "@/components/FeedList";
 import { getFeed, feedEnabled, type FeedType } from "@/lib/feed";
@@ -14,15 +13,12 @@ const TABS: { key: FeedType | "all"; label: string; href: string }[] = [
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <main className="mx-auto max-w-3xl p-8">
-      <Link href="/" className="text-sm text-gray-500 hover:underline">
-        ← 홈
-      </Link>
-      <h1 className="mt-4 text-2xl font-bold">관심 &amp; 소식</h1>
-      <p className="mt-2 text-gray-500">
+    <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
+      <h1 className="text-2xl font-bold tracking-tight">관심 &amp; 소식</h1>
+      <p className="mt-2 text-sm text-muted">
         보유·관심 종목의 뉴스 · 공시 · 실적 일정을 원문 그대로 모아 보여줍니다.
       </p>
-      <div className="mt-6 space-y-6">{children}</div>
+      <div className="mt-6 space-y-5">{children}</div>
     </main>
   );
 }
@@ -38,7 +34,7 @@ export default async function FeedPage({
   if (!configured) {
     return (
       <Shell>
-        <p className="text-sm text-gray-500">Supabase 설정이 필요합니다.</p>
+        <p className="text-sm text-muted">Supabase 설정이 필요합니다.</p>
       </Shell>
     );
   }
@@ -50,7 +46,7 @@ export default async function FeedPage({
   if (!user) {
     return (
       <Shell>
-        <p className="text-sm text-gray-500">로그인이 필요합니다.</p>
+        <p className="text-sm text-muted">로그인이 필요합니다.</p>
       </Shell>
     );
   }
@@ -79,16 +75,6 @@ export default async function FeedPage({
 
   return (
     <Shell>
-      <div className="flex items-center justify-between text-sm">
-        <span className="text-gray-500">{user.email}</span>
-        <div className="flex gap-4">
-          <Link href="/dashboard" className="text-blue-600 hover:underline">
-            대시보드
-          </Link>
-          <SignOutButton />
-        </div>
-      </div>
-
       <WatchlistManager held={held} watch={watch} />
 
       {!feedEnabled() && (
@@ -99,7 +85,7 @@ export default async function FeedPage({
       )}
 
       {/* 필터 탭 */}
-      <div className="flex gap-1 border-b border-gray-200 text-sm dark:border-gray-800">
+      <div className="flex gap-1 border-b border-line text-sm">
         {TABS.map((tab) => {
           const active =
             (tab.key === "all" && !filter) || tab.key === filter;
@@ -109,8 +95,8 @@ export default async function FeedPage({
               href={tab.href}
               className={`-mb-px border-b-2 px-3 py-2 ${
                 active
-                  ? "border-blue-600 font-medium text-blue-600"
-                  : "border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"
+                  ? "border-brand font-medium text-brand"
+                  : "border-transparent text-muted hover:text-fg"
               }`}
             >
               {tab.label}
@@ -120,7 +106,7 @@ export default async function FeedPage({
       </div>
 
       {tickers.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-gray-300 p-8 text-center text-gray-400 dark:border-gray-700">
+        <div className="themed rounded-2xl border border-dashed border-line bg-surface p-10 text-center text-muted">
           보유·관심 종목을 추가하면 소식이 여기에 표시됩니다.
         </div>
       ) : (

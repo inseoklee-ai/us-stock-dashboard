@@ -1,26 +1,85 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* 다크 모드: (1)시스템 자동 = data-theme 속성이 없을 때 미디어쿼리로, (2)토글 = data-theme="dark"로.
+   토글이 시스템 설정을 이긴다(명시 속성이 있으면 미디어쿼리 분기 무시). */
+@custom-variant dark {
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme]), :root:not([data-theme]) *) {
+      @slot;
+    }
   }
 }
 
+/* ===== 토스풍 팔레트 (라이트 기본) ===== */
+:root {
+  --app: #f2f4f6; /* 페이지 배경 */
+  --surface: #ffffff; /* 카드 */
+  --surface-2: #f9fafb; /* 살짝 눌린 영역/hover */
+  --line: #e5e8eb; /* 테두리 */
+  --fg: #191f28; /* 본문 텍스트 */
+  --muted: #6b7684; /* 보조 텍스트 */
+  --brand: #3182f6; /* 포인트(버튼·링크) */
+  --brand-strong: #1b64da; /* hover */
+  --brand-fg: #ffffff; /* 포인트 위 텍스트 */
+  --up: #f04452; /* 상승(한국식 빨강) */
+  --down: #3182f6; /* 하락(한국식 파랑) */
+  color-scheme: light;
+}
+
+/* 다크 토큰 값 */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --app: #17171c;
+    --surface: #1e1f25;
+    --surface-2: #262832;
+    --line: #2e2f36;
+    --fg: #f2f4f6;
+    --muted: #9da3ab;
+    --brand: #4593fc;
+    --brand-strong: #6aa9ff;
+    --brand-fg: #ffffff;
+    --up: #ff5d6a;
+    --down: #5a9cff;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --app: #17171c;
+  --surface: #1e1f25;
+  --surface-2: #262832;
+  --line: #2e2f36;
+  --fg: #f2f4f6;
+  --muted: #9da3ab;
+  --brand: #4593fc;
+  --brand-strong: #6aa9ff;
+  --brand-fg: #ffffff;
+  --up: #ff5d6a;
+  --down: #5a9cff;
+  color-scheme: dark;
+}
+
+/* Tailwind 유틸로 노출: bg-app, bg-surface, border-line, text-fg, text-muted, text-brand, text-up, text-down ... */
+@theme inline {
+  --color-app: var(--app);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-brand: var(--brand);
+  --color-brand-strong: var(--brand-strong);
+  --color-brand-fg: var(--brand-fg);
+  --color-up: var(--up);
+  --color-down: var(--down);
+  --font-sans: var(--font-sans-kr), ui-sans-serif, system-ui, sans-serif;
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--app);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
 }

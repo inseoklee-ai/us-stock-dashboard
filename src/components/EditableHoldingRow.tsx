@@ -14,10 +14,10 @@ import {
 } from "@/lib/format";
 
 const gainColor = (v: number) =>
-  v > 0 ? "text-red-600" : v < 0 ? "text-blue-600" : "text-gray-500";
+  v > 0 ? "text-up" : v < 0 ? "text-down" : "text-muted";
 
 const inputCls =
-  "w-24 rounded border border-gray-300 px-2 py-1 text-right text-sm dark:border-gray-700 dark:bg-transparent";
+  "w-24 rounded-lg border border-line bg-surface px-2 py-1 text-right text-sm focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20";
 
 const initialState: FormState = {};
 
@@ -36,13 +36,13 @@ export function EditableHoldingRow({ row }: { row: HoldingRow }) {
 
   if (editing) {
     return (
-      <tr className="border-b border-gray-100 dark:border-gray-900">
+      <tr className="border-b border-line">
         <td colSpan={8} className="py-3">
           <form action={formAction} className="flex flex-wrap items-end gap-3">
             <input type="hidden" name="id" value={h.id} />
             <span className="w-12 pb-1 font-medium">{h.ticker}</span>
 
-            <label className="flex flex-col gap-0.5 text-xs text-gray-500">
+            <label className="flex flex-col gap-0.5 text-xs text-muted">
               수량
               <input
                 name="quantity"
@@ -55,7 +55,7 @@ export function EditableHoldingRow({ row }: { row: HoldingRow }) {
               />
             </label>
 
-            <label className="flex flex-col gap-0.5 text-xs text-gray-500">
+            <label className="flex flex-col gap-0.5 text-xs text-muted">
               평균단가 (USD)
               <input
                 name="avg_price"
@@ -68,7 +68,7 @@ export function EditableHoldingRow({ row }: { row: HoldingRow }) {
               />
             </label>
 
-            <label className="flex flex-col gap-0.5 text-xs text-gray-500">
+            <label className="flex flex-col gap-0.5 text-xs text-muted">
               매수환율 (선택)
               <input
                 name="buy_fx_rate"
@@ -85,20 +85,20 @@ export function EditableHoldingRow({ row }: { row: HoldingRow }) {
               <button
                 type="submit"
                 disabled={pending}
-                className="rounded bg-blue-600 px-3 py-1 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                className="rounded-lg bg-brand px-3 py-1 text-sm font-semibold text-brand-fg hover:bg-brand-strong disabled:opacity-50"
               >
                 {pending ? "저장 중…" : "저장"}
               </button>
               <button
                 type="button"
                 onClick={() => setEditing(false)}
-                className="rounded border border-gray-300 px-3 py-1 text-sm text-gray-500 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-900"
+                className="rounded-lg border border-line px-3 py-1 text-sm text-muted hover:bg-surface-2"
               >
                 취소
               </button>
             </div>
             {state.error && (
-              <p className="w-full text-sm text-red-600">{state.error}</p>
+              <p className="w-full text-sm text-up">{state.error}</p>
             )}
           </form>
         </td>
@@ -107,7 +107,7 @@ export function EditableHoldingRow({ row }: { row: HoldingRow }) {
   }
 
   return (
-    <tr className="border-b border-gray-100 dark:border-gray-900">
+    <tr className="border-b border-line">
       <td className="py-2 pr-4 font-medium">{h.ticker}</td>
       <td className="py-2 pr-4 text-right tabular-nums">
         {formatNumber(h.quantity)}
@@ -119,26 +119,26 @@ export function EditableHoldingRow({ row }: { row: HoldingRow }) {
         {h.buy_fx_rate != null ? (
           formatKRW(h.buy_fx_rate)
         ) : (
-          <span className="text-gray-400">미입력</span>
+          <span className="text-muted/70">미입력</span>
         )}
       </td>
       <td className="py-2 pr-4 text-right tabular-nums">
         {price === null ? (
-          <span className="text-gray-400">—</span>
+          <span className="text-muted/70">—</span>
         ) : (
           formatUSD(price)
         )}
       </td>
       <td className="py-2 pr-4 text-right tabular-nums">
         {value === null ? (
-          <span className="text-gray-400">{formatUSD(cost)}</span>
+          <span className="text-muted/70">{formatUSD(cost)}</span>
         ) : (
           formatUSD(value)
         )}
       </td>
       <td
         className={`py-2 pr-4 text-right tabular-nums ${
-          gain === null ? "text-gray-400" : gainColor(gain)
+          gain === null ? "text-muted/70" : gainColor(gain)
         }`}
       >
         {gain === null || gainPct === null ? (
@@ -154,7 +154,7 @@ export function EditableHoldingRow({ row }: { row: HoldingRow }) {
         <button
           type="button"
           onClick={() => setEditing(true)}
-          className="text-blue-600 hover:underline"
+          className="font-medium text-brand hover:underline"
         >
           수정
         </button>
@@ -162,7 +162,7 @@ export function EditableHoldingRow({ row }: { row: HoldingRow }) {
           <input type="hidden" name="id" value={h.id} />
           <SubmitButton
             pendingLabel="삭제 중…"
-            className="text-gray-400 hover:text-red-600 hover:underline disabled:opacity-50"
+            className="text-muted hover:text-up hover:underline disabled:opacity-50"
           >
             삭제
           </SubmitButton>
