@@ -109,7 +109,7 @@ export function AssetHistoryChart({ points }: { points: Point[] }) {
       <p className="mt-1 text-xs text-muted/80">
         {synthetic
           ? "※ 첫 기록이라 0에서 시작한 것으로 표시했어요. 방문이 쌓이면 실제 추이로 바뀝니다."
-          : "※ 대시보드를 방문한 날의 자산이 기록됩니다. 색: 시작 대비 상승(빨강)·하락(파랑)."}
+          : "※ 대시보드를 방문한 날의 자산이 기록됩니다. 기록은 계속 누적되어 도표로 표시됩니다."}
       </p>
     </div>
   );
