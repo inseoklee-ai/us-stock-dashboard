@@ -1,7 +1,8 @@
 # PRD — 미국주식 자산관리 & 기업정보 웹서비스
 
-> 최종 정리: 2026-07-15 · 상태: **MVP 구현 완료** (배포 전)
-> 이 문서는 실제 구현된 내용(as-built) 기준입니다. 초기 기획본은 상위 폴더 `PRD_미국주식자산뉴스서비스.md` 참고.
+> 최종 정리: 2026-07-17 · 상태: **배포 완료 · 운영 중**
+> 공개 URL: https://us-stock-dashboard-modu-rich.vercel.app
+> 이 문서는 실제 구현된 내용(as-built) 기준입니다. 초기 기획본은 상위 폴더 `PRD_미국주식자산뉴스서비스.md` 참고. 변경 이력은 11장 참고.
 
 ---
 
@@ -13,6 +14,8 @@
 - **주 사용자**: 미국주식을 보유한 한국 개인투자자
 - **핵심 가치**: 흩어진 자산 현황 + 관심 종목 소식을 하나의 대시보드로
 - **한 줄 정의**: "내 미국주식 포트폴리오 + 관심 종목 소식을 한 곳에서"
+- **현황**: Vercel에 공개 배포·운영 중. 자산확인·소식 두 축 MVP + 환차손익·추이 그래프·비밀번호 재설정·입력검증·보안점검까지 완료.
+- **브랜딩/디자인**: CKF 로고(파비콘·헤더), 토스풍 테마(라이트/다크 + 시스템 자동 + 토글), Noto Sans KR.
 
 ---
 
@@ -23,25 +26,29 @@
 | 사용 대상 | 불특정 다수 (공개 서비스, 회원 인증) |
 | 자산 입력 | 수동 입력 (티커·수량·매수단가·매수환율) |
 | 시세 | 지연 시세 (약 15분, 무료 API) |
-| 정보 소스 | 뉴스 + 공식 공시(SEC) + 실적 캘린더 |
-| 언어 | 원문 그대로 (영어) — AI 요약·번역은 향후 |
+| 정보 소스 | 뉴스(Finnhub + Marketaux 감성분석) + 공식 공시(SEC) + 실적 캘린더 |
+| 언어 | 원문 그대로 (영어) — AI 한글요약은 보류(11-25) |
 | 표시 통화 | USD / KRW 둘 다 + **환차손익 분리** |
-| 추이 기록 | MVP는 현재 시점, 일별 스냅샷 테이블은 준비됨(배치는 향후) |
-| 기술 스택 | Next.js 16 + Supabase + Vercel |
+| 추이 기록 | **구현 완료** — 방문 기반 + cron(매일 22:00 UTC) 일별 스냅샷 누적 → SVG 추이 그래프 |
+| 디자인 | 토스풍 테마 · 다크 토글(쿠키 기반) · CKF 로고 |
+| 기술 스택 | Next.js 16 + Supabase + Vercel (배포 완료) |
 
 ---
 
 ## 3. 구현 완료 기능 (MVP)
 
 ### 3-1. 인증
-- 이메일/비밀번호 **회원가입 · 로그인 · 로그아웃** (Supabase Auth)
-- 이메일 확인 흐름(`/auth/confirm`) — 개발 편의로 현재 OFF, **배포 전 ON 필요**
+- 이메일/비밀번호 **회원가입 · 로그인 · 로그아웃** (Supabase Auth, bcrypt 해시)
+- **비밀번호 재설정**: `/forgot-password` → 메일 링크 → `/reset-password` (Gmail SMTP + token_hash)
+- 이메일 확인 흐름(`/auth/confirm`) — 개발 편의로 현재 OFF, **정식 오픈 전 ON 권장**
 - Proxy(구 Middleware)로 세션 갱신 + 보호 경로(`/dashboard`, `/portfolio`) 접근 제어
+- 입력 검증: 이메일·비밀번호 서버 검증(`validation.ts`)
 
 ### 3-2. 포트폴리오 (자산 관리)
-- 보유 종목 **추가 / 수정 / 삭제** (RLS로 본인 데이터만)
+- 보유 종목 **추가 / 수정 / 삭제** (RLS로 본인 데이터만, 서버 액션 인증)
   - 필드: 티커 · 수량 · 평균 매수단가(USD) · 매수 시점 환율
   - 각 행 "수정"으로 수량·평균단가·매수환율 일괄 편집
+  - 입력 검증(상한·형식) + DB CHECK 제약 이중 방어
 - 종목별 **현재가 · 평가금액 · 평가손익 · 수익률** (지연 시세)
 - 상단 요약 카드: **총 평가금액(USD/KRW) · 총 평가손익**
 - **환차손익 분리 표시**
@@ -52,45 +59,57 @@
 ### 3-3. 대시보드
 - 스탯 카드: **총 자산(USD/KRW) · 전일 대비 등락 · 총 평가손익(환차 포함)**
 - **종목 비중 도넛 차트** (순수 SVG, 색맹 안전 팔레트, 9개↑는 "기타"로 묶음)
+- **자산 추이 그래프** (SVG 라인) — 방문 기반 + cron 일별 스냅샷 누적, 첫날은 0-기준선 표시
 
 ### 3-4. 관심 & 소식 피드
 - **관심 종목 관리** (추가/삭제) + 보유 종목 자동 포함
 - 통합 피드 (원문 그대로, 최신순, 미래 실적 일정 상단):
-  - **뉴스**: Finnhub company-news + Marketaux(감성분석 뱃지, 선택), URL 중복 제거
+  - **뉴스**: Finnhub company-news + Marketaux(감성분석 뱃지: 긍정 빨강/부정 파랑, 선택), URL 중복 제거
   - **공시**: SEC EDGAR (8-K, 10-Q, 10-K 등 주요 서식, 실제 문서 링크)
   - **실적**: Finnhub earnings calendar (예정 실적 + EPS 예상)
 - 필터 탭: 전체 / 뉴스 / 공시 / 실적
+- **소스별 5초 타임아웃**: 느린 소스는 건너뛰고 받은 정보부터 표시
+
+### 3-5. 디자인 · UX
+- **토스풍 테마**: 토큰 기반(카드·라운드·그림자), 등락색 한국식. 라이트/다크 + 시스템 자동 + 토글(쿠키)
+- **공용 헤더**: 브랜드(CKF 로고) + 네비(활성 탭 강조) + 테마 토글 + 로그인/로그아웃
+- **브랜딩**: CKF 로고 파비콘(`icon.png`) + 헤더 로고(`logo.png`), 홈 카드 골드 로고톤 아이콘
+- **로딩 표시**: 페이지 전환 스피너(`loading.tsx`) + 폼/버튼 진행 표시
 
 ---
 
 ## 4. 기술 아키텍처
 
 ```
-[Next.js 16 (App Router, TS, Tailwind)]  — Vercel 배포 예정
+[Next.js 16 (App Router, TS, Tailwind)]  — Vercel 배포 완료 (modu-rich)
         │
-        ├─ Supabase Auth        인증
+        ├─ Supabase Auth        인증 (+ Gmail SMTP 커스텀 메일)
         ├─ Supabase Postgres    데이터 + RLS
-        └─ (예정) Edge/Cron      스냅샷·수집 배치
+        └─ Vercel Cron          일별 자산 스냅샷 배치 (매일 22:00 UTC, service_role)
                  │
                  ├─ Finnhub       시세(/quote) · 뉴스 · 실적 캘린더
+                 ├─ Marketaux     뉴스 + 감성분석 (선택, 무료 100회/일)
                  ├─ Frankfurter   환율 USD→KRW (키 불필요)
                  └─ SEC EDGAR     공시 (키 불필요, User-Agent 필요)
 ```
 
 - 시세/뉴스/환율은 **서버 사이드 fetch + revalidate 캐시**(시세 15분, 환율 1시간, 뉴스 30분)로 무료 한도 보호
+- 피드 외부 요청은 **소스별 5초 타임아웃**(`AbortSignal.timeout`)으로 느린 소스가 전체를 막지 않게 함
 - 계산 로직은 `src/lib/portfolio.ts`(`computePortfolio`)로 공통화
+- 테마는 **쿠키 기반 서버 렌더링**(레이아웃이 `theme` 쿠키 읽어 `data-theme` 선렌더) → 깜빡임·하이드레이션 경고 없음
+- 배포: GitHub `main` push → Vercel 자동 배포. 환경변수로 키 관리(코드 하드코딩 없음)
 
 ### 주요 파일
 | 영역 | 경로 |
 |------|------|
 | Supabase 클라이언트 | `src/lib/supabase/{client,server,admin,proxy}.ts` |
 | 세션/보호경로 | `src/proxy.ts` |
-| 시세·환율·피드 | `src/lib/{quotes,fx,feed,portfolio}.ts` |
-| 인증 UI | `src/app/login/`, `src/components/AuthForm.tsx` |
+| 시세·환율·피드·검증 | `src/lib/{quotes,fx,feed,portfolio,validation}.ts` |
+| 인증 UI | `src/app/{login,forgot-password,reset-password}/`, `src/app/auth/confirm/`, `src/components/AuthForm.tsx` |
 | 포트폴리오 | `src/app/portfolio/`, `src/components/{AddHoldingForm,HoldingsTable,EditableHoldingRow,PortfolioSummary}.tsx` |
-| 대시보드 | `src/app/dashboard/`, `src/components/WeightDonut.tsx` |
-| 피드 | `src/app/feed/`, `src/components/{WatchlistManager,FeedList}.tsx` |
-| 배치(뼈대) | `src/app/api/cron/{snapshot,feed}/route.ts`, `vercel.json` |
+| 대시보드 | `src/app/dashboard/`, `src/components/{WeightDonut,AssetHistoryChart}.tsx` |
+| 피드 | `src/app/feed/`, `src/components/{WatchlistManager,AddWatchForm,FeedList}.tsx` |
+| 배치(cron, 구현완료) | `src/app/api/cron/{snapshot,feed}/route.ts`, `vercel.json` |
 | 디자인/테마 | `src/app/globals.css`(토큰·다크변형), `src/app/layout.tsx`(쿠키 테마·Noto Sans KR), `src/components/{AppHeader,HeaderNav,ThemeToggle,Card}.tsx` |
 | 브랜딩 | `src/app/icon.png`(파비콘), `public/logo.png`(헤더 로고) — CKF 로고 |
 
