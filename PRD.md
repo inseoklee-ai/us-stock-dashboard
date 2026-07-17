@@ -92,6 +92,7 @@
 | 피드 | `src/app/feed/`, `src/components/{WatchlistManager,FeedList}.tsx` |
 | 배치(뼈대) | `src/app/api/cron/{snapshot,feed}/route.ts`, `vercel.json` |
 | 디자인/테마 | `src/app/globals.css`(토큰·다크변형), `src/app/layout.tsx`(쿠키 테마·Noto Sans KR), `src/components/{AppHeader,HeaderNav,ThemeToggle,Card}.tsx` |
+| 브랜딩 | `src/app/icon.png`(파비콘), `public/logo.png`(헤더 로고) — CKF 로고 |
 
 > ⚠️ Next.js 16 주의: Middleware → **Proxy**(`src/proxy.ts`, Node.js 런타임)로 명칭 변경됨.
 
@@ -294,7 +295,11 @@ npm run dev        # http://localhost:3000
 - **요청**: 4대 보안 체크(비밀값 환경변수화 / 백엔드 검증 / RLS / 인가) 확인.
 - **진행**: 코드로 4항목 모두 충족 확인(→ 9-1 표). 발견한 소소한 취약점 1건 수정 — `cron/feed`가 `CRON_SECRET` 미설정 시 `Bearer undefined`로 우회 가능하던 것을 snapshot 라우트와 동일한 `!process.env.CRON_SECRET` 가드로 차단. 401 응답 검증 완료.
 
-### 11-23. 진행 중 / 보류
+### 11-23. 브랜딩 (로고 · 파비콘)
+- **요청**: 탭 아이콘(파비콘) 변경 → 처음엔 ₩ 파란 사각형 SVG로 만들었다가, 사용자 제공 **CKF 로고**(네이비+골드, 지구본·회로·상승 화살표)로 교체.
+- **진행**: `src/app/icon.png`(512×512, App Router 파일 컨벤션 → 자동 파비콘)로 적용. 헤더 브랜드 마크의 ₩ 사각형도 동일 로고(`public/logo.png`)로 교체([AppHeader](src/components/AppHeader.tsx)) → 탭·헤더 로고 통일. `format.ts`의 ₩는 원화 통화기호라 유지. 로드 200·콘솔 에러 0 검증.
+
+### 11-24. 진행 중 / 보류
 - **AI 한글 요약**(뉴스 원문 요약): 착수했으나 진행 중 보류. Claude API(사용량 과금, Haiku 후보) + 캐싱·지연호출 설계까지 논의.
 
 ---

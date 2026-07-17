@@ -28,9 +28,12 @@ export async function AppHeader() {
       <div className="mx-auto flex h-14 max-w-5xl items-center gap-4 px-4 sm:px-6">
         {/* 브랜드 */}
         <Link href="/" className="flex shrink-0 items-center gap-2">
-          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand text-sm font-bold text-brand-fg">
-            ₩
-          </span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logo.png"
+            alt="모두리치 로고"
+            className="h-7 w-7 rounded-lg object-cover"
+          />
           <span className="text-[15px] font-bold tracking-tight">모두리치</span>
         </Link>
 
