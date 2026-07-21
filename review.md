@@ -1,4 +1,4 @@
-# AIFFEL Campus Code Peer Review Templete
+# AIFFEL Campus Code Peer Review Templete 1
 - 코더 : 최종우
 - 리뷰어 : 이인석 + Claude
 
