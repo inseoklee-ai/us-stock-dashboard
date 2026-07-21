@@ -1,6 +1,6 @@
 # AIFFEL Campus Code Peer Review Templete
-- 코더 : 저장소 소유자 (GitHub: inseoklee-ai)
-- 리뷰어 : Claude (AI 코드 리뷰)
+- 코더 : 최종우
+- 리뷰어 : 이인석 + Claude
 
 > 검토일 2026-07-21 · 검토 커밋 `3a85a22`("docs: PRD 1-4장 현재 배포 상태로 최신화") 기준.
 > 검토 방법: 소스 전체 정독 + `npm install` → `tsc --noEmit` → `next build` → `eslint` 실행 + 실제 배포본(https://us-stock-dashboard-modu-rich.vercel.app) 브라우저 접속 확인.
